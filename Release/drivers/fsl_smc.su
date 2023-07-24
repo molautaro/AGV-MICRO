@@ -1,0 +1,13 @@
+../drivers/fsl_smc.c:74:13:SMC_EnterStopRamFunc	0	static
+../drivers/fsl_smc.c:105:6:SMC_PreEnterStopModes	0	static
+../drivers/fsl_smc.c:117:6:SMC_PostExitStopModes	0	static
+../drivers/fsl_smc.c:128:6:SMC_PreEnterWaitModes	0	static
+../drivers/fsl_smc.c:140:6:SMC_PostExitWaitModes	0	static
+../drivers/fsl_smc.c:152:10:SMC_SetPowerModeRun	0	static
+../drivers/fsl_smc.c:192:10:SMC_SetPowerModeWait	0	static
+../drivers/fsl_smc.c:210:10:SMC_SetPowerModeStop	8	static
+../drivers/fsl_smc.c:252:10:SMC_SetPowerModeVlpr	0	static
+../drivers/fsl_smc.c:290:10:SMC_SetPowerModeVlpw	0	static
+../drivers/fsl_smc.c:308:10:SMC_SetPowerModeVlps	8	static
+../drivers/fsl_smc.c:343:10:SMC_SetPowerModeLls	8	static
+../drivers/fsl_smc.c:405:10:SMC_SetPowerModeVlls	8	static

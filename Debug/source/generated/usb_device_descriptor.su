@@ -1,0 +1,5 @@
+../source/generated/usb_device_descriptor.c:334:14:USB_DeviceGetDeviceDescriptor	16	static
+../source/generated/usb_device_descriptor.c:353:14:USB_DeviceGetConfigurationDescriptor	16	static
+../source/generated/usb_device_descriptor.c:366:14:USB_DeviceGetStringDescriptor	24	static
+../source/generated/usb_device_descriptor.c:402:31:getEndpointSetting	24	static
+../source/generated/usb_device_descriptor.c:465:14:USB_DeviceSetSpeed	32	static

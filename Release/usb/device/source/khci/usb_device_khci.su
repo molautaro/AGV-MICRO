@@ -1,0 +1,12 @@
+../usb/device/source/khci/usb_device_khci.c:190:13:USB_DeviceKhciSetDefaultState	20	static
+../usb/device/source/khci/usb_device_khci.c:108:21:USB_DeviceKhciEndpointTransfer	40	static
+../usb/device/source/khci/usb_device_khci.c:146:13:USB_DeviceKhciPrimeNextSetup	24	static
+../usb/device/source/khci/usb_device_khci.c:1098:14:USB_DeviceKhciDeinit	0	static
+../usb/device/source/khci/usb_device_khci.c:1140:14:USB_DeviceKhciSend	32	static
+../usb/device/source/khci/usb_device_khci.c:1202:14:USB_DeviceKhciRecv	32	static
+../usb/device/source/khci/usb_device_khci.c:1264:14:USB_DeviceKhciCancel	24	static
+../usb/device/source/khci/usb_device_khci.c:506:21:USB_DeviceKhciEndpointUnstall	24	static
+../usb/device/source/khci/usb_device_khci.c:368:21:USB_DeviceKhciEndpointDeinit	16	static
+../usb/device/source/khci/usb_device_khci.c:1295:14:USB_DeviceKhciControl	32	static
+../usb/device/source/khci/usb_device_khci.c:1016:14:USB_DeviceKhciInit	24	static
+../usb/device/source/khci/usb_device_khci.c:1489:6:USB_DeviceKhciIsrFunction	72	static

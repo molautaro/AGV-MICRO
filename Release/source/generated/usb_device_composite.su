@@ -1,0 +1,5 @@
+../source/generated/usb_device_composite.c:417:21:USB_DeviceCallback	24	static
+../source/generated/usb_device_composite.c:336:6:USB0_IRQHandler	8	static
+../source/generated/usb_device_composite.c:357:6:USB_DeviceIsrEnable	0	static
+../source/generated/usb_device_composite.c:692:14:USB_DeviceApplicationInit	16	static
+../source/generated/usb_device_composite.c:845:6:USB_DeviceTasks	0	static

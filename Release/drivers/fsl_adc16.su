@@ -1,0 +1,11 @@
+../drivers/fsl_adc16.c:129:6:ADC16_Deinit	0	static
+../drivers/fsl_adc16.c:155:6:ADC16_GetDefaultConfig	8	static
+../drivers/fsl_adc16.c:267:6:ADC16_SetChannelMuxMode	0	static
+../drivers/fsl_adc16.c:292:6:ADC16_SetHardwareCompareConfig	0	static
+../drivers/fsl_adc16.c:340:6:ADC16_SetHardwareAverage	0	static
+../drivers/fsl_adc16.c:64:6:ADC16_Init	8	static
+../drivers/fsl_adc16.c:400:10:ADC16_GetStatusFlags	0	static
+../drivers/fsl_adc16.c:190:10:ADC16_DoAutoCalibration	16	static
+../drivers/fsl_adc16.c:423:6:ADC16_ClearStatusFlags	0	static
+../drivers/fsl_adc16.c:460:6:ADC16_SetChannelConfig	8	static
+../drivers/fsl_adc16.c:490:10:ADC16_GetChannelStatusFlags	0	static
