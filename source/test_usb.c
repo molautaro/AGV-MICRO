@@ -47,21 +47,20 @@
 
 #define INITESPCMD 0xC0 //Inicializar ESP
 #define MOTORSCMD 0xD0 //comando motor
-#define MOTORSONOCMD 0xD2 // COMANDO ON/OFF MOTOR
+#define TESTCMD 0xD2 // COMANDO ON/OFF MOTOR
 #define ALIVECMD 0xF0 // comando alive
 
 
 /* TODO: insert other definitions and declarations here. */
 void EnviarDatos(uint8_t cmd);
-
+void RecibirDatos(uint8_t head);
+void Decode();
+void CheckChecksumAndReceiveData();
+void UpdateChecksum();
+void CheckBytesLeft();
 /*******************************************************************************
  * Variables
  ******************************************************************************/
-volatile uint32_t timerCounter;
-volatile _rx ringRx;
-volatile _tx ringTx;
-uint8_t timeoutUSB =4;
-uint8_t rxBuf[256], txBuf[256];
 
 // typedef
 typedef union{
@@ -89,6 +88,15 @@ typedef union {
     float f;
 } _sWork;
 
+
+volatile uint32_t timerCounter;
+volatile _rx ringRx;
+volatile _tx ringTx;
+uint8_t timeoutUSB = 4;
+uint8_t rxBuf[256], txBuf[256];
+volatile _sFlag flag1;
+#define ALIVERECIVE flag1.bit.b0 //RECIBIO alive
+
 /*
  * @brief   Application entry point.
  */
@@ -108,6 +116,7 @@ int main(void) {
     ringTx.iR=0;
     ringRx.iW=0;
     ringRx.iR=0;
+    LED_RED_INIT(1);
 #endif
 
     PRINTF("Hello World\n");
@@ -119,9 +128,19 @@ int main(void) {
     	USB_DeviceInterface0CicVcomTask();
 
     	if(!timeoutUSB){
-    	    		EnviarDatos(ALIVECMD);
-    	    		timeoutUSB =4;
-    	    	}
+    	    EnviarDatos(ALIVECMD);
+    	    timeoutUSB = 4;
+    	}
+
+    	Decode();
+
+
+    	if(ALIVERECIVE){
+    		//
+    		ALIVERECIVE = 0;
+    		EnviarDatos(TESTCMD);
+    	}
+
         i++ ;
         /* 'Dummy' NOP to allow source level single stepping of
             tight while() loop */
@@ -130,6 +149,121 @@ int main(void) {
     return 0 ;
 }
 
+
+void Decode(){
+    if(ringRx.iW == ringRx.iR)
+        return;
+
+    switch (ringRx.header)
+    {
+        case 0:
+            if (ringRx.buf[ringRx.iR] == 'U')
+                ringRx.header++;
+            else{
+                ringRx.header = 0;
+                ringRx.iR--;
+            }
+            break;
+        case 1:
+            if (ringRx.buf[ringRx.iR] == 'N')
+                ringRx.header++;
+            else{
+                ringRx.header = 0;
+                ringRx.iR--;
+            }
+            break;
+        case 2:
+            if (ringRx.buf[ringRx.iR] == 'E')
+                ringRx.header++;
+            else{
+                ringRx.header = 0;
+                ringRx.iR--;
+            }
+            break;
+        case 3:
+            if (ringRx.buf[ringRx.iR] == 'R'){
+                ringRx.header++;
+
+            }
+            else{
+                ringRx.header = 0;
+                ringRx.iR--;
+            }
+            break;
+        case 4:
+            ringRx.nBytes = ringRx.buf[ringRx.iR];
+            ringRx.header++;
+            break;
+        case 5:
+            if (ringRx.buf[ringRx.iR] == 0x00)
+                ringRx.header++;
+            else{
+                ringRx.header = 0;
+                ringRx.iR--;
+            }
+            break;
+        case 6:
+            if (ringRx.buf[ringRx.iR] == ':')
+            {
+                ringRx.cks= 'U'^'N'^'E'^'R'^ringRx.nBytes^0x00^':';
+                ringRx.header++;
+                ringRx.iData = ringRx.iR+1;
+                LED_RED_TOGGLE();
+            }
+            else{
+                ringRx.header = 0;
+                ringRx.iR--;
+            }
+            break;
+
+        case 7:
+        	UpdateChecksum();
+        	CheckBytesLeft();
+        	if(ringRx.nBytes == 0)
+        	{
+        	CheckChecksumAndReceiveData();
+        	}
+            break;
+        default:
+            ringRx.header = 0;
+            break;
+    }
+    ringRx.iR++;
+}
+
+void RecibirDatos(uint8_t head){
+	switch (ringRx.buf[head++]){
+		case 0xD2:
+			ALIVERECIVE = 1;
+			//algo
+		break;
+	}
+}
+
+void UpdateChecksum()
+{
+    if(ringRx.nBytes > 1)
+    {
+        ringRx.cks ^= ringRx.buf[ringRx.iR];
+    }
+}
+
+void CheckBytesLeft()
+{
+    ringRx.nBytes--;
+    if(ringRx.nBytes == 0)
+    {
+        ringRx.header = 0;
+    }
+}
+
+void CheckChecksumAndReceiveData()
+{
+    if(ringRx.cks == ringRx.buf[ringRx.iR])
+    {
+        RecibirDatos(ringRx.iData);
+    }
+}
 
 void EnviarDatos(uint8_t cmd){
 	ringTx.buf[ringTx.iW++]='U';
@@ -144,13 +278,7 @@ void EnviarDatos(uint8_t cmd){
 			ringTx.buf[ringTx.iW++] = ':';
 			ringTx.buf[ringTx.iW++] = cmd;
 		break;
-		case MOTORSCMD:
-			ringTx.buf[ringTx.iW++] = 0x02;
-			ringTx.buf[ringTx.iW++] = 0x00;
-			ringTx.buf[ringTx.iW++] = ':';
-			ringTx.buf[ringTx.iW++] = cmd;
-		break;
-		case MOTORSONOCMD:
+		case TESTCMD:
 			ringTx.buf[ringTx.iW++] = 0x02;
 			ringTx.buf[ringTx.iW++] = 0x00;
 			ringTx.buf[ringTx.iW++] = ':';

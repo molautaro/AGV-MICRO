@@ -177,6 +177,11 @@
                         <pin_feature name="identifier" value=""/>
                      </pin_features>
                   </pin>
+                  <pin peripheral="GPIOB" signal="GPIO, 22" pin_num="68" pin_signal="PTB22/SPI2_SOUT/FB_AD29/CMP2_OUT">
+                     <pin_features>
+                        <pin_feature name="identifier" value=""/>
+                     </pin_features>
+                  </pin>
                </pins>
             </function>
             <function name="BOARD_InitButtonsPins">
