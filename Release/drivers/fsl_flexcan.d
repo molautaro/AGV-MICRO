@@ -1,8 +1,5 @@
-component/lists/fsl_component_generic_list.o \
- component/lists/fsl_component_generic_list.d: \
- ../component/lists/fsl_component_generic_list.c \
- ../component/lists/fsl_component_generic_list.h \
- C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\ (2)\test_usb\drivers/fsl_common.h \
+drivers/fsl_flexcan.o drivers/fsl_flexcan.d: ../drivers/fsl_flexcan.c \
+ ../drivers/fsl_flexcan.h ../drivers/fsl_common.h \
  C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\ (2)\test_usb\device/fsl_device_registers.h \
  C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\ (2)\test_usb\device/MK64F12.h \
  C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\ (2)\test_usb\CMSIS/core_cm4.h \
@@ -11,11 +8,9 @@ component/lists/fsl_component_generic_list.o \
  C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\ (2)\test_usb\CMSIS/cmsis_gcc.h \
  C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\ (2)\test_usb\device/system_MK64F12.h \
  C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\ (2)\test_usb\device/MK64F12_features.h \
- C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\ (2)\test_usb\drivers/fsl_common_arm.h \
- C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\ (2)\test_usb\drivers/fsl_clock.h \
- C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\ (2)\test_usb\drivers/fsl_common.h
-../component/lists/fsl_component_generic_list.h:
-C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\ (2)\test_usb\drivers/fsl_common.h:
+ ../drivers/fsl_common_arm.h ../drivers/fsl_clock.h
+../drivers/fsl_flexcan.h:
+../drivers/fsl_common.h:
 C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\ (2)\test_usb\device/fsl_device_registers.h:
 C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\ (2)\test_usb\device/MK64F12.h:
 C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\ (2)\test_usb\CMSIS/core_cm4.h:
@@ -24,6 +19,5 @@ C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\ (2)\test_
 C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\ (2)\test_usb\CMSIS/cmsis_gcc.h:
 C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\ (2)\test_usb\device/system_MK64F12.h:
 C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\ (2)\test_usb\device/MK64F12_features.h:
-C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\ (2)\test_usb\drivers/fsl_common_arm.h:
-C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\ (2)\test_usb\drivers/fsl_clock.h:
-C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\ (2)\test_usb\drivers/fsl_common.h:
+../drivers/fsl_common_arm.h:
+../drivers/fsl_clock.h:

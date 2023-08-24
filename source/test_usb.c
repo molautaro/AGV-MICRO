@@ -43,13 +43,18 @@
 #include "usb_device_interface_0_cic_vcom.h"
 
 
+
 /* TODO: insert other include files here. */
 
 #define INITESPCMD 0xC0 //Inicializar ESP
 #define MOTORSCMD 0xD0 //comando motor
 #define TESTCMD 0xD2 // COMANDO ON/OFF MOTOR
 #define ALIVECMD 0xF0 // comando alive
-
+#define RX_MESSAGE_STD_BUFFER_NUM (0)
+#define RX_MESSAGE_EXT_BUFFER_NUM (1)
+#define TX_MESSAGE_BUFFER_NUM (2)
+#define BATTERY_RECEIVE_ID 0x18FF50E5
+#define BATTERY_SEND_ID 0x1806E5F4
 
 /* TODO: insert other definitions and declarations here. */
 void EnviarDatos(uint8_t cmd);
@@ -58,6 +63,8 @@ void Decode();
 void CheckChecksumAndReceiveData();
 void UpdateChecksum();
 void CheckBytesLeft();
+static void flexcan_callback(CAN_Type *base, flexcan_handle_t *handle, status_t status, uint32_t result, void *userData);
+
 /*******************************************************************************
  * Variables
  ******************************************************************************/
@@ -95,7 +102,20 @@ volatile _tx ringTx;
 uint8_t timeoutUSB = 4;
 uint8_t rxBuf[256], txBuf[256];
 volatile _sFlag flag1;
-#define ALIVERECIVE flag1.bit.b0 //RECIBIO alive
+#define ALIVERECIVE 	flag1.bit.b0 //RECIBIO alive
+#define RX_CAN_COMPLETE flag1.bit.b1
+#define WWW 			flag1.bit.b2
+#define WWWW 			flag1.bit.b3
+#define WWWWW 			flag1.bit.b4
+#define WWWWWW 			flag1.bit.b5
+#define WWWWWWW 		flag1.bit.b6
+#define WWWWWWWW 		flag1.bit.b7
+
+flexcan_handle_t rxHandle, txHandle, flexcanHandle;
+flexcan_frame_t txFrame, RX_STD_Frame, RX_EXT_Frame;
+flexcan_mb_transfer_t TX_CAN_BUF, RX_EXT_CAN_BUF, RX_STD_CAN_BUF;
+//flexcan_frame_t frame;
+flexcan_rx_mb_config_t mbConfigSTD, mbConfigEXT;
 
 /*
  * @brief   Application entry point.
@@ -106,9 +126,12 @@ int main(void) {
     BOARD_InitBootPins();
     BOARD_InitBootClocks();
     BOARD_InitBootPeripherals();
+    FLEXCAN_SetRxMbGlobalMask(CAN0, FLEXCAN_RX_MB_STD_MASK(0, 0, 0));
+    FLEXCAN_SetRxMbGlobalMask(CAN0, FLEXCAN_RX_MB_EXT_MASK(0, 0, 0));
 #ifndef BOARD_INIT_DEBUG_CONSOLE_PERIPHERAL
     /* Init FSL debug console. */
     BOARD_InitDebugConsole();
+    //kFLEXCAN_FrameFormatMix;
 
     ringTx.buf=txBuf;
     ringRx.buf=rxBuf;
@@ -117,6 +140,26 @@ int main(void) {
     ringRx.iW=0;
     ringRx.iR=0;
     LED_RED_INIT(1);
+    LED_GREEN_INIT(1);
+    LED_BLUE_INIT(1);
+
+    RX_STD_CAN_BUF.mbIdx = RX_MESSAGE_STD_BUFFER_NUM;
+    RX_STD_CAN_BUF.frame = &RX_STD_Frame;
+    RX_EXT_CAN_BUF.mbIdx = RX_MESSAGE_STD_BUFFER_NUM;
+    RX_EXT_CAN_BUF.frame = &RX_EXT_Frame;
+    mbConfigSTD.format = kFLEXCAN_FrameFormatStandard;
+    mbConfigSTD.type   = kFLEXCAN_FrameTypeData;
+    mbConfigSTD.id = FLEXCAN_ID_STD(0x0);
+    FLEXCAN_SetRxMbConfig(CAN0, RX_MESSAGE_STD_BUFFER_NUM, &mbConfigSTD, true);
+    //mbConfigEXT.format = kFLEXCAN_FrameFormatExtend;
+    //mbConfigEXT.type   = kFLEXCAN_FrameTypeData;
+    //mbConfigEXT.id = FLEXCAN_ID_EXT(0);
+    //FLEXCAN_SetRxMbConfig(CAN0, RX_MESSAGE_EXT_BUFFER_NUM, &mbConfigEXT, true);
+
+    FLEXCAN_TransferCreateHandle(CAN0, &flexcanHandle, flexcan_callback, NULL);
+    FLEXCAN_TransferReceiveNonBlocking(CAN0, &flexcanHandle, &RX_STD_CAN_BUF);
+    //FLEXCAN_TransferReceiveNonBlocking(CAN0, &flexcanHandle, &RX_EXT_CAN_BUF);
+
 #endif
 
     PRINTF("Hello World\n");
@@ -126,6 +169,10 @@ int main(void) {
     /* Enter an infinite loop, just incrementing a counter. */
     while(1) {
     	USB_DeviceInterface0CicVcomTask();
+    	//if(FLEXCAN_TransferReceiveNonBlocking(CAN0, &flexcanHandle, &RX_STD_CAN_BUF) == kStatus_Success)
+    	//LED_BLUE_ON();
+    	//if(FLEXCAN_TransferReceiveNonBlocking(CAN0, &flexcanHandle, &RX_EXT_CAN_BUF) == kStatus_Success)
+
 
     	if(!timeoutUSB){
     	    EnviarDatos(ALIVECMD);
@@ -136,9 +183,21 @@ int main(void) {
 
 
     	if(ALIVERECIVE){
-    		//
     		ALIVERECIVE = 0;
     		EnviarDatos(TESTCMD);
+    	}
+
+    	if(RX_CAN_COMPLETE){
+    		// iria funcion para decodificar supongo
+    		if(RX_STD_CAN_BUF.frame->format == kFLEXCAN_FrameFormatExtend){
+    			LED_GREEN_TOGGLE();
+
+    		}
+    		if(RX_STD_CAN_BUF.frame->format == kFLEXCAN_FrameFormatStandard){
+    			LED_RED_TOGGLE();
+    		}
+    		RX_CAN_COMPLETE = 0;
+
     	}
 
         i++ ;
@@ -149,6 +208,58 @@ int main(void) {
     return 0 ;
 }
 
+static void flexcan_callback(CAN_Type *base, flexcan_handle_t *handle, status_t status, uint32_t result, void *userData){
+	switch (status){
+	/* Process FlexCAN Rx event. */
+	case kStatus_FLEXCAN_RxIdle:
+		//PRINTF("prueba \n");
+		//LED_BLUE_TOGGLE();
+		/*if (RX_MESSAGE_EXT_BUFFER_NUM == result)
+		{
+			//rxComplete = 1;
+			LED_GREEN_TOGGLE();
+			FLEXCAN_TransferReceiveNonBlocking(CAN0, &flexcanHandle, &RX_EXT_CAN_BUF);
+		}*/
+		if (RX_MESSAGE_STD_BUFFER_NUM == result)
+		{
+			RX_CAN_COMPLETE = 1;
+			//recepcion completada
+            FLEXCAN_TransferReceiveNonBlocking(CAN0, &flexcanHandle, &RX_STD_CAN_BUF);
+			//LED_BLUE_TOGGLE();
+		}
+		break;
+	case kStatus_FLEXCAN_RxOverflow:
+		//LED_BLUE_TOGGLE();
+		if (RX_MESSAGE_EXT_BUFFER_NUM == result)
+		{
+			//rxComplete = 1;
+		}
+		if (RX_MESSAGE_STD_BUFFER_NUM == result)
+				{
+					//rxComplete = 1;
+				}
+		break;
+		/* Process FlexCAN Tx event. */
+	case kStatus_FLEXCAN_TxIdle:
+		//LED_GREEN_TOGGLE();
+		if (TX_MESSAGE_BUFFER_NUM == result)
+		{
+			//txComplete = 1;
+		}
+		break;
+	case kStatus_FLEXCAN_TxBusy:
+		//LED_GREEN_TOGGLE();
+		if (TX_MESSAGE_BUFFER_NUM == result)
+		{
+			//retry
+		}
+		break;
+
+	default:
+		//LED_BLUE_ON();
+		break;
+	}
+}
 
 void Decode(){
     if(ringRx.iW == ringRx.iR)

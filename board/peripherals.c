@@ -154,6 +154,167 @@ static void PIT_init(void) {
 }
 
 /***********************************************************************************************************************
+ * CAN0 initialization code
+ **********************************************************************************************************************/
+/* clang-format off */
+/* TEXT BELOW IS USED AS SETTING FOR TOOLS *************************************
+instance:
+- name: 'CAN0'
+- type: 'flexcan'
+- mode: 'interrupts'
+- custom_name_enabled: 'false'
+- type_id: 'flexcan_a98f4e39f821600f664c89f66f55b020'
+- functional_group: 'BOARD_InitPeripherals'
+- peripheral: 'CAN0'
+- config_sets:
+  - interruptsCfg:
+    - messageBufferIrqs: '0'
+    - interruptsEnable: ''
+    - enable_ored_mb_irq: 'false'
+    - interrupt_ored_mb:
+      - IRQn: 'CAN0_ORed_Message_buffer_IRQn'
+      - enable_interrrupt: 'enabled'
+      - enable_priority: 'false'
+      - priority: '0'
+      - enable_custom_name: 'false'
+    - enable_busoff_irq: 'false'
+    - interrupt_busoff:
+      - IRQn: 'CAN0_Bus_Off_IRQn'
+      - enable_interrrupt: 'enabled'
+      - enable_priority: 'false'
+      - priority: '0'
+      - enable_custom_name: 'false'
+    - enable_error_irq: 'false'
+    - interrupt_error:
+      - IRQn: 'CAN0_Error_IRQn'
+      - enable_interrrupt: 'enabled'
+      - enable_priority: 'false'
+      - priority: '0'
+      - enable_custom_name: 'false'
+    - enable_tx_irq: 'false'
+    - interrupt_tx:
+      - IRQn: 'CAN0_Tx_Warning_IRQn'
+      - enable_interrrupt: 'enabled'
+      - enable_priority: 'false'
+      - priority: '0'
+      - enable_custom_name: 'false'
+    - enable_rx_irq: 'false'
+    - interrupt_rx:
+      - IRQn: 'CAN0_Rx_Warning_IRQn'
+      - enable_interrrupt: 'enabled'
+      - enable_priority: 'false'
+      - priority: '0'
+      - enable_custom_name: 'false'
+    - enable_wakeup_irq: 'false'
+    - interrupt_wakeup:
+      - IRQn: 'CAN0_Wake_Up_IRQn'
+      - enable_interrrupt: 'enabled'
+      - enable_priority: 'false'
+      - priority: '0'
+      - enable_custom_name: 'false'
+  - fsl_flexcan:
+    - can_config:
+      - clockSource: 'kFLEXCAN_ClkSrcPeri'
+      - clockSourceFreq: 'BOARD_BootClockRUN'
+      - wakeupSrc: 'kFLEXCAN_WakeupSrcUnfiltered'
+      - baudRate: '250000'
+      - maxMbNum: '16'
+      - enableLoopBack: 'false'
+      - enableTimerSync: 'true'
+      - enableSelfWakeup: 'false'
+      - enableIndividMask: 'false'
+      - disableSelfReception: 'false'
+      - enableListenOnlyMode: 'false'
+      - enableSupervisorMode: 'false'
+      - timingConfig:
+        - propSeg: '2'
+        - phaseSeg1: '4'
+        - phaseSeg2: '3'
+        - rJumpwidth: '2'
+        - bitTime: []
+    - enableRxFIFO: 'false'
+    - rxFIFO:
+      - idFilterTable: ''
+      - idFilterNum: 'num0'
+      - idFilterType: 'kFLEXCAN_RxFifoFilterTypeA'
+      - priority: 'kFLEXCAN_RxFifoPrioLow'
+    - channels:
+      - 0:
+        - mbID: '0'
+        - mbType: 'mbRx'
+        - rxMb:
+          - id: '0'
+          - format: 'kFLEXCAN_FrameFormatStandard'
+          - type: 'kFLEXCAN_FrameTypeData'
+      - 1:
+        - mbID: '3'
+        - mbType: 'mbTx'
+        - rxMb:
+          - id: '0'
+          - format: 'kFLEXCAN_FrameFormatStandard'
+          - type: 'kFLEXCAN_FrameTypeData'
+      - 2:
+        - mbID: '2'
+        - mbType: 'mbTx'
+        - rxMb:
+          - id: '0'
+          - format: 'kFLEXCAN_FrameFormatStandard'
+          - type: 'kFLEXCAN_FrameTypeData'
+      - 3:
+        - mbID: '1'
+        - mbType: 'mbRx'
+        - rxMb:
+          - id: '0'
+          - format: 'kFLEXCAN_FrameFormatExtend'
+          - type: 'kFLEXCAN_FrameTypeData'
+ * BE CAREFUL MODIFYING THIS COMMENT - IT IS YAML SETTINGS FOR TOOLS **********/
+/* clang-format on */
+const flexcan_config_t CAN0_config = {
+  .clkSrc = kFLEXCAN_ClkSrc1,
+  .wakeupSrc = kFLEXCAN_WakeupSrcUnfiltered,
+  .bitRate = 250000UL,
+  .maxMbNum = 16U,
+  .enableLoopBack = false,
+  .enableTimerSync = true,
+  .enableSelfWakeup = false,
+  .enableIndividMask = false,
+  .disableSelfReception = false,
+  .enableListenOnlyMode = false,
+  .enableSupervisorMode = false,
+  .timingConfig = {
+    .preDivider = 23,
+    .propSeg = 1,
+    .phaseSeg1 = 3,
+    .phaseSeg2 = 2,
+    .rJumpwidth = 1
+  }
+};
+/* Message buffer 0 configuration structure */
+const flexcan_rx_mb_config_t CAN0_rx_mb_config_0 = {
+  .id = FLEXCAN_ID_STD(0UL),
+  .format = kFLEXCAN_FrameFormatStandard,
+  .type = kFLEXCAN_FrameTypeData
+};
+/* Message buffer 1 configuration structure */
+const flexcan_rx_mb_config_t CAN0_rx_mb_config_1 = {
+  .id = FLEXCAN_ID_EXT(0UL),
+  .format = kFLEXCAN_FrameFormatExtend,
+  .type = kFLEXCAN_FrameTypeData
+};
+
+static void CAN0_init(void) {
+  FLEXCAN_Init(CAN0_PERIPHERAL, &CAN0_config, CAN0_CLOCK_SOURCE);
+  /* Message buffer 0 initialization */
+  FLEXCAN_SetRxMbConfig(CAN0_PERIPHERAL, 0, &CAN0_rx_mb_config_0, true);
+  /* Message buffer 3 initialization */
+  FLEXCAN_SetTxMbConfig(CAN0_PERIPHERAL, 3, true);
+  /* Message buffer 2 initialization */
+  FLEXCAN_SetTxMbConfig(CAN0_PERIPHERAL, 2, true);
+  /* Message buffer 1 initialization */
+  FLEXCAN_SetRxMbConfig(CAN0_PERIPHERAL, 1, &CAN0_rx_mb_config_1, true);
+}
+
+/***********************************************************************************************************************
  * USB0 initialization code
  **********************************************************************************************************************/
 /* clang-format off */
@@ -250,6 +411,7 @@ void BOARD_InitPeripherals(void)
 
   /* Initialize components */
   PIT_init();
+  CAN0_init();
   USB0_init();
 }
 

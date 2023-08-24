@@ -1,4 +1,4 @@
-C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\CMSIS/core_cm4.h:1679:22:__NVIC_EnableIRQ	0	static
+C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb (2)\test_usb\CMSIS/core_cm4.h:1679:22:__NVIC_EnableIRQ	0	static
 ../drivers/fsl_i2c.c:309:17:I2C_CheckAndClearError	0	static
 ../drivers/fsl_i2c.c:518:13:I2C_TransferCommonIRQHandler	8	static
 ../drivers/fsl_i2c.c:145:10:I2C_GetInstance	0	static

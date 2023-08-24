@@ -145,6 +145,10 @@ BOARD_InitPins:
   - {pin_num: '10', peripheral: USB0, signal: DP, pin_signal: USB0_DP, identifier: ''}
   - {pin_num: '11', peripheral: USB0, signal: DM, pin_signal: USB0_DM, identifier: ''}
   - {pin_num: '68', peripheral: GPIOB, signal: 'GPIO, 22', pin_signal: PTB22/SPI2_SOUT/FB_AD29/CMP2_OUT, identifier: ''}
+  - {pin_num: '64', peripheral: CAN0, signal: TX, pin_signal: PTB18/CAN0_TX/FTM2_CH0/I2S0_TX_BCLK/FB_AD15/FTM2_QD_PHA}
+  - {pin_num: '65', peripheral: CAN0, signal: RX, pin_signal: PTB19/CAN0_RX/FTM2_CH1/I2S0_TX_FS/FB_OE_b/FTM2_QD_PHB}
+  - {pin_num: '67', peripheral: GPIOB, signal: 'GPIO, 21', pin_signal: PTB21/SPI2_SCK/FB_AD30/CMP1_OUT, identifier: ''}
+  - {pin_num: '33', peripheral: GPIOE, signal: 'GPIO, 26', pin_signal: PTE26/ENET_1588_CLKIN/UART4_CTS_b/RTC_CLKOUT/USB_CLKIN, identifier: ''}
  * BE CAREFUL MODIFYING THIS COMMENT - IT IS YAML SETTINGS FOR TOOLS ***********
  */
 /* clang-format on */
@@ -161,6 +165,8 @@ void BOARD_InitPins(void)
     CLOCK_EnableClock(kCLOCK_PortA);
     /* Port B Clock Gate Control: Clock enabled */
     CLOCK_EnableClock(kCLOCK_PortB);
+    /* Port E Clock Gate Control: Clock enabled */
+    CLOCK_EnableClock(kCLOCK_PortE);
 
     /* PORTA2 (pin 36) is configured as TRACE_SWO */
     PORT_SetPinMux(PORTA, 2U, kPORT_MuxAlt7);
@@ -180,8 +186,20 @@ void BOARD_InitPins(void)
                       * is configured as a digital output. */
                      | PORT_PCR_DSE(kPORT_LowDriveStrength));
 
+    /* PORTB18 (pin 64) is configured as CAN0_TX */
+    PORT_SetPinMux(PORTB, 18U, kPORT_MuxAlt2);
+
+    /* PORTB19 (pin 65) is configured as CAN0_RX */
+    PORT_SetPinMux(PORTB, 19U, kPORT_MuxAlt2);
+
+    /* PORTB21 (pin 67) is configured as PTB21 */
+    PORT_SetPinMux(PORTB, 21U, kPORT_MuxAsGpio);
+
     /* PORTB22 (pin 68) is configured as PTB22 */
     PORT_SetPinMux(PORTB, 22U, kPORT_MuxAsGpio);
+
+    /* PORTE26 (pin 33) is configured as PTE26 */
+    PORT_SetPinMux(PORTE, 26U, kPORT_MuxAsGpio);
 }
 
 /* clang-format off */
