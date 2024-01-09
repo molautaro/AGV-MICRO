@@ -63,6 +63,7 @@ void Decode();
 void CheckChecksumAndReceiveData();
 void UpdateChecksum();
 void CheckBytesLeft();
+void DecodeMagneticSensor();
 static void flexcan_callback(CAN_Type *base, flexcan_handle_t *handle, status_t status, uint32_t result, void *userData);
 
 /*******************************************************************************
@@ -101,7 +102,11 @@ volatile _rx ringRx;
 volatile _tx ringTx;
 uint8_t timeoutUSB = 4;
 uint8_t rxBuf[256], txBuf[256];
+uint16_t magneticSensorBitStatus;
 volatile _sFlag flag1;
+volatile _sWork magneticSensorData[8];
+
+
 #define ALIVERECIVE 	flag1.bit.b0 //RECIBIO alive
 #define RX_CAN_COMPLETE flag1.bit.b1
 #define WWW 			flag1.bit.b2
@@ -184,6 +189,7 @@ int main(void) {
 
     	if(ALIVERECIVE){
     		ALIVERECIVE = 0;
+    		LED_GREEN_TOGGLE();
     		EnviarDatos(TESTCMD);
     	}
 
@@ -191,13 +197,11 @@ int main(void) {
     		// iria funcion para decodificar supongo
     		if(RX_STD_CAN_BUF.frame->format == kFLEXCAN_FrameFormatExtend){
     			LED_GREEN_TOGGLE();
-
     		}
     		if(RX_STD_CAN_BUF.frame->format == kFLEXCAN_FrameFormatStandard){
     			LED_RED_TOGGLE();
     		}
     		RX_CAN_COMPLETE = 0;
-
     	}
 
         i++ ;
@@ -259,6 +263,12 @@ static void flexcan_callback(CAN_Type *base, flexcan_handle_t *handle, status_t 
 		//LED_BLUE_ON();
 		break;
 	}
+}
+
+void DecodeMagneticSensor(){
+//cell state byte 1	H		 0000 011
+//cell state byte 2	L		1000 0000
+	magneticSensorBitStatus = ((uint16_t)byte1 << 8) | byte2
 }
 
 void Decode(){
