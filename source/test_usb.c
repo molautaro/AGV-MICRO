@@ -103,8 +103,18 @@ volatile _tx ringTx;
 uint8_t timeoutUSB = 4;
 uint8_t rxBuf[256], txBuf[256];
 uint16_t magneticSensorBitStatus;
-volatile _sFlag flag1;
+volatile _sFlag flag1, SensorsStatus;
 volatile _sWork magneticSensorData[8];
+
+
+#define SENSORSTATUS_0 	SensorsStatus.bit.b0 //Estado Sensor 0
+#define SENSORSTATUS_1 	SensorsStatus.bit.b1 //Estado Sensor 1
+#define SENSORSTATUS_2 	SensorsStatus.bit.b2 //Estado Sensor 2
+#define SENSORSTATUS_3 	SensorsStatus.bit.b3 //Estado Sensor 3
+#define SENSORSTATUS_4 	SensorsStatus.bit.b4 //Estado Sensor 4
+#define SENSORSTATUS_5 	SensorsStatus.bit.b5 //Estado Sensor 5
+#define SENSORSTATUS_6 	SensorsStatus.bit.b6 //Estado Sensor 6
+#define SENSORSTATUS_7 	SensorsStatus.bit.b7 //Estado Sensor 7
 
 
 #define ALIVERECIVE 	flag1.bit.b0 //RECIBIO alive
@@ -201,8 +211,15 @@ int main(void) {
     		if(RX_STD_CAN_BUF.frame->format == kFLEXCAN_FrameFormatStandard){
     			LED_RED_TOGGLE();
     		}
+    		//RX_STD_CAN_BUF.frame->id
+    		if(RX_STD_CAN_BUF.frame->id == ID_SENSOR_MAGNETICO){
+    			//ESCRIBO COSAS PARA SENSOR MAGNETICO
+    		}
+    		DecodeMagneticSensor();
     		RX_CAN_COMPLETE = 0;
     	}
+
+    	//FLEXCAN_TransferSendNonBlocking(CAN0, &flexcanHandle, & MENSAJE);
 
         i++ ;
         /* 'Dummy' NOP to allow source level single stepping of
@@ -239,9 +256,10 @@ static void flexcan_callback(CAN_Type *base, flexcan_handle_t *handle, status_t 
 			//rxComplete = 1;
 		}
 		if (RX_MESSAGE_STD_BUFFER_NUM == result)
-				{
-					//rxComplete = 1;
-				}
+		{
+			RX_CAN_COMPLETE = 1;
+			FLEXCAN_TransferReceiveNonBlocking(CAN0, &flexcanHandle, &RX_STD_CAN_BUF);
+		}
 		break;
 		/* Process FlexCAN Tx event. */
 	case kStatus_FLEXCAN_TxIdle:
@@ -266,9 +284,25 @@ static void flexcan_callback(CAN_Type *base, flexcan_handle_t *handle, status_t 
 }
 
 void DecodeMagneticSensor(){
-//cell state byte 1	H		 0000 011
-//cell state byte 2	L		1000 0000
-	magneticSensorBitStatus = ((uint16_t)byte1 << 8) | byte2
+//cell state byte 1	H		 0000 011 sensores derecha
+//cell state byte 2	L		1000 0000 sensores izquierda
+// 0000 0110 1000 0000
+	magneticSensorBitStatus = ((uint16_t)RX_STD_CAN_BUF.frame->dataByte6 << 8) | RX_STD_CAN_BUF.frame->dataByte7;
+
+	//for (i = 0; i < 8; ++i) {
+	//	SensorsStatus.byte =
+	//}
+
+	/*sensor0 = magneticSensorBitStatus & (1 << 8);
+	sensor1 = magneticSensorBitStatus & (1 << 9);
+	sensor2 = magneticSensorBitStatus & (1 << 10);
+	sensor3 = magneticSensorBitStatus & (1 << 11);
+	// -------------------------- LOW ------------------------- //
+	sensor4 = magneticSensorBitStatus & (1 << 0);
+	sensor5 = magneticSensorBitStatus & (1 << 1);
+	sensor6 = magneticSensorBitStatus & (1 << 2);
+	sensor7 = magneticSensorBitStatus & (1 << 3);
+	*/
 }
 
 void Decode(){
