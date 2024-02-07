@@ -55,6 +55,8 @@
 #define TX_MESSAGE_BUFFER_NUM (2)
 #define BATTERY_RECEIVE_ID 0x18FF50E5
 #define BATTERY_SEND_ID 0x1806E5F4
+#define ID_RFID_SENSOR FLEXCAN_ID_STD(0x100)
+#define ID_MAGNETIC_SENSOR FLEXCAN_ID_STD(0x123)
 
 /* TODO: insert other definitions and declarations here. */
 void EnviarDatos(uint8_t cmd);
@@ -65,6 +67,8 @@ void UpdateChecksum();
 void CheckBytesLeft();
 void DecodeMagneticSensor();
 static void flexcan_callback(CAN_Type *base, flexcan_handle_t *handle, status_t status, uint32_t result, void *userData);
+void DecodeCANMessage();
+void DecodeRFIDSensor();
 
 /*******************************************************************************
  * Variables
@@ -104,8 +108,7 @@ uint8_t timeoutUSB = 4;
 uint8_t rxBuf[256], txBuf[256];
 uint16_t magneticSensorBitStatus;
 volatile _sFlag flag1, SensorsStatus;
-volatile _sWork magneticSensorData[8];
-
+volatile _sWork RFIDData[2],DestinationStation[2];
 
 #define SENSORSTATUS_0 	SensorsStatus.bit.b0 //Estado Sensor 0
 #define SENSORSTATUS_1 	SensorsStatus.bit.b1 //Estado Sensor 1
@@ -160,8 +163,8 @@ int main(void) {
 
     RX_STD_CAN_BUF.mbIdx = RX_MESSAGE_STD_BUFFER_NUM;
     RX_STD_CAN_BUF.frame = &RX_STD_Frame;
-    RX_EXT_CAN_BUF.mbIdx = RX_MESSAGE_STD_BUFFER_NUM;
-    RX_EXT_CAN_BUF.frame = &RX_EXT_Frame;
+    //RX_EXT_CAN_BUF.mbIdx = RX_MESSAGE_STD_BUFFER_NUM;
+    //RX_EXT_CAN_BUF.frame = &RX_EXT_Frame;
     mbConfigSTD.format = kFLEXCAN_FrameFormatStandard;
     mbConfigSTD.type   = kFLEXCAN_FrameTypeData;
     mbConfigSTD.id = FLEXCAN_ID_STD(0x0);
@@ -182,6 +185,8 @@ int main(void) {
     /* Force the counter to be placed into memory. */
     volatile static int i = 0 ;
     /* Enter an infinite loop, just incrementing a counter. */
+    DestinationStation[0].u8[0]= 0x45;
+    DestinationStation[0].u8[1]= 0x31;
     while(1) {
     	USB_DeviceInterface0CicVcomTask();
     	//if(FLEXCAN_TransferReceiveNonBlocking(CAN0, &flexcanHandle, &RX_STD_CAN_BUF) == kStatus_Success)
@@ -206,15 +211,16 @@ int main(void) {
     	if(RX_CAN_COMPLETE){
     		// iria funcion para decodificar supongo
     		if(RX_STD_CAN_BUF.frame->format == kFLEXCAN_FrameFormatExtend){
-    			LED_GREEN_TOGGLE();
+    			//LED_GREEN_TOGGLE();
     		}
     		if(RX_STD_CAN_BUF.frame->format == kFLEXCAN_FrameFormatStandard){
-    			LED_RED_TOGGLE();
+    			//LED_RED_TOGGLE();
     		}
     		//RX_STD_CAN_BUF.frame->id
-    		if(RX_STD_CAN_BUF.frame->id == ID_SENSOR_MAGNETICO){
+    		if(RX_STD_CAN_BUF.frame->id == ID_MAGNETIC_SENSOR){
     			//ESCRIBO COSAS PARA SENSOR MAGNETICO
     		}
+    		DecodeCANMessage();
     		DecodeMagneticSensor();
     		RX_CAN_COMPLETE = 0;
     	}
@@ -227,6 +233,22 @@ int main(void) {
         __asm volatile ("nop");
     }
     return 0 ;
+}
+
+void DecodeCANMessage(){
+	switch (RX_STD_CAN_BUF.frame->id) {
+		case ID_RFID_SENSOR: //cuando el mensaje que llego es del RFID
+			//LED_GREEN_TOGGLE();
+			DecodeRFIDSensor();
+			break;
+		case ID_MAGNETIC_SENSOR: //Cuando el mensaje que llego es del SENSOR MAGNETICO
+			LED_RED_TOGGLE();
+			break;
+		case BATTERY_RECEIVE_ID: //cuando la bateria manda algo
+			break;
+		default:
+			break;
+	}
 }
 
 static void flexcan_callback(CAN_Type *base, flexcan_handle_t *handle, status_t status, uint32_t result, void *userData){
@@ -280,6 +302,24 @@ static void flexcan_callback(CAN_Type *base, flexcan_handle_t *handle, status_t 
 	default:
 		//LED_BLUE_ON();
 		break;
+	}
+}
+
+void DecodeRFIDSensor(){
+	RFIDData[0].u8[0] = RX_STD_CAN_BUF.frame->dataByte0;
+	RFIDData[0].u8[1] = RX_STD_CAN_BUF.frame->dataByte1;
+	RFIDData[0].u8[2] = RX_STD_CAN_BUF.frame->dataByte2;
+	RFIDData[0].u8[3] = RX_STD_CAN_BUF.frame->dataByte3;
+	RFIDData[1].u8[0] = RX_STD_CAN_BUF.frame->dataByte4;
+	RFIDData[1].u8[1] = RX_STD_CAN_BUF.frame->dataByte5;
+	RFIDData[1].u8[2] = RX_STD_CAN_BUF.frame->dataByte6;
+	RFIDData[1].u8[3] = RX_STD_CAN_BUF.frame->dataByte7;
+
+	if (RFIDData[0].u16[0]==DestinationStation[0].u16[0]){
+		LED_GREEN_TOGGLE();//LLEGO A DESTINO
+	}
+	else{
+		LED_RED_TOGGLE();//NO LLEGO A DESTINO
 	}
 }
 
