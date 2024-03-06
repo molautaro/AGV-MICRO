@@ -57,6 +57,10 @@
 #define BATTERY_SEND_ID 0x1806E5F4
 #define ID_RFID_SENSOR FLEXCAN_ID_STD(0x100)
 #define ID_MAGNETIC_SENSOR FLEXCAN_ID_STD(0x123)
+#define ID_SEND_BATERIA FLEXCAN_ID_EXT(0x1806E5F4)//ID de msjs enviados desde placa a la bateria
+#define ID_REC_BATERIA FLEXCAN_ID_EXT(0x18FF50E5)//ID de msjs que recibe la placa desde la bateria
+
+#define MSJ_BAT 0x01
 
 /* TODO: insert other definitions and declarations here. */
 void EnviarDatos(uint8_t cmd);
@@ -69,6 +73,7 @@ void DecodeMagneticSensor();
 static void flexcan_callback(CAN_Type *base, flexcan_handle_t *handle, status_t status, uint32_t result, void *userData);
 void DecodeCANMessage();
 void DecodeRFIDSensor();
+void CreateCANMessage(uint8_t msj);
 
 /*******************************************************************************
  * Variables
@@ -104,9 +109,13 @@ typedef union {
 volatile uint32_t timerCounter;
 volatile _rx ringRx;
 volatile _tx ringTx;
-uint8_t timeoutUSB = 4;
+uint16_t timeoutUSB = 200;
+uint16_t timeoutBAT = 100;
 uint8_t rxBuf[256], txBuf[256];
+//uint8_t flag_carga_completa = 0;
+uint8_t msj_CAN_BAT[8] = {0x02, 0x48, 0x01, 0x2C, 0x00, 0x00, 0x00, 0x00};
 uint16_t magneticSensorBitStatus;
+uint16_t volt_bateria = 0;
 volatile _sFlag flag1, SensorsStatus;
 volatile _sWork RFIDData[2],DestinationStation[2];
 
@@ -122,7 +131,7 @@ volatile _sWork RFIDData[2],DestinationStation[2];
 
 #define ALIVERECIVE 	flag1.bit.b0 //RECIBIO alive
 #define RX_CAN_COMPLETE flag1.bit.b1
-#define WWW 			flag1.bit.b2
+#define BATT_FULL_CHARGE flag1.bit.b2
 #define WWWW 			flag1.bit.b3
 #define WWWWW 			flag1.bit.b4
 #define WWWWWW 			flag1.bit.b5
@@ -131,7 +140,7 @@ volatile _sWork RFIDData[2],DestinationStation[2];
 
 flexcan_handle_t rxHandle, txHandle, flexcanHandle;
 flexcan_frame_t txFrame, RX_STD_Frame, RX_EXT_Frame;
-flexcan_mb_transfer_t TX_CAN_BUF, RX_EXT_CAN_BUF, RX_STD_CAN_BUF;
+flexcan_mb_transfer_t TX_CAN_BUF, RX_EXT_CAN_BUF, RX_STD_CAN_BUF;//buffer para enviar,bufer no usado, buffer de recepcion
 //flexcan_frame_t frame;
 flexcan_rx_mb_config_t mbConfigSTD, mbConfigEXT;
 
@@ -160,6 +169,16 @@ int main(void) {
     LED_RED_INIT(1);
     LED_GREEN_INIT(1);
     LED_BLUE_INIT(1);
+
+
+    //TX_CAN_BUF.frame->format = kFLEXCAN_FrameFormatStandard;
+    txFrame.type = kFLEXCAN_FrameTypeData;
+    //txFrame.format = kFLEXCAN_FrameFormatExtend;
+    //txFrame.id = ID_SEND_BATERIA;
+    //txFrame.length = 8;
+    //TX_CAN_BUF.frame->type = kFLEXCAN_FrameTypeData;
+    TX_CAN_BUF.mbIdx = TX_MESSAGE_BUFFER_NUM;
+    TX_CAN_BUF.frame = &txFrame;
 
     RX_STD_CAN_BUF.mbIdx = RX_MESSAGE_STD_BUFFER_NUM;
     RX_STD_CAN_BUF.frame = &RX_STD_Frame;
@@ -196,7 +215,12 @@ int main(void) {
 
     	if(!timeoutUSB){
     	    EnviarDatos(ALIVECMD);
-    	    timeoutUSB = 4;
+    	    timeoutUSB = 400;
+    	}
+
+    	if(!timeoutBAT && !BATT_FULL_CHARGE){
+    		CreateCANMessage(MSJ_BAT);
+    		timeoutBAT = 100;
     	}
 
     	Decode();
@@ -208,20 +232,8 @@ int main(void) {
     		EnviarDatos(TESTCMD);
     	}
 
-    	if(RX_CAN_COMPLETE){
-    		// iria funcion para decodificar supongo
-    		if(RX_STD_CAN_BUF.frame->format == kFLEXCAN_FrameFormatExtend){
-    			//LED_GREEN_TOGGLE();
-    		}
-    		if(RX_STD_CAN_BUF.frame->format == kFLEXCAN_FrameFormatStandard){
-    			//LED_RED_TOGGLE();
-    		}
-    		//RX_STD_CAN_BUF.frame->id
-    		if(RX_STD_CAN_BUF.frame->id == ID_MAGNETIC_SENSOR){
-    			//ESCRIBO COSAS PARA SENSOR MAGNETICO
-    		}
-    		DecodeCANMessage();
-    		DecodeMagneticSensor();
+    	if(RX_CAN_COMPLETE){//recibe exitosamente un msj por CAN
+    		DecodeCANMessage();//llamo a funcion de decodificar mensaje
     		RX_CAN_COMPLETE = 0;
     	}
 
@@ -242,9 +254,17 @@ void DecodeCANMessage(){
 			DecodeRFIDSensor();
 			break;
 		case ID_MAGNETIC_SENSOR: //Cuando el mensaje que llego es del SENSOR MAGNETICO
-			LED_RED_TOGGLE();
+			//LED_RED_TOGGLE();
+			DecodeMagneticSensor();
 			break;
-		case BATTERY_RECEIVE_ID: //cuando la bateria manda algo
+		case ID_REC_BATERIA: //cuando la bateria manda algo
+			//ESCRIBO COSAS PARA CARGA DE BATERIA
+			volt_bateria |= (RX_STD_CAN_BUF.frame->dataByte0) <<8;
+			volt_bateria |= RX_STD_CAN_BUF.frame->dataByte1;
+			if(volt_bateria == 534){
+				BATT_FULL_CHARGE = 1;
+				//enviar msj a display para indicar que la bateria esta llena
+			}
 			break;
 		default:
 			break;
@@ -492,6 +512,26 @@ void EnviarDatos(uint8_t cmd){
 		ringTx.buf[ringTx.iW++]=ringTx.cks;
 }
 
+void CreateCANMessage(uint8_t msj){
+
+	switch(msj){
+	case 0x01:
+		txFrame.format = kFLEXCAN_FrameFormatExtend;
+		txFrame.id = ID_SEND_BATERIA;
+		txFrame.length = 8;
+		txFrame.dataByte0 = 0x02;
+		txFrame.dataByte1 = 0x48;
+		txFrame.dataByte2 = 0x01;
+		txFrame.dataByte3 = 0x2C;
+		txFrame.dataByte4 = 0x00;
+		txFrame.dataByte5 = 0x00;
+		txFrame.dataByte6 = 0x00;
+		txFrame.dataByte7 = 0x00;
+		break;
+	}
+	FLEXCAN_TransferSendNonBlocking(CAN0, &flexcanHandle, &TX_CAN_BUF);
+}
+
 
 /* PIT0_IRQn interrupt handler */
 void PIT_CHANNEL_0_IRQHANDLER(void) {
@@ -505,6 +545,10 @@ void PIT_CHANNEL_0_IRQHANDLER(void) {
   if(timeoutUSB){
 	  timeoutUSB--;
       }
+
+  if(timeoutBAT){
+	  timeoutBAT--;
+  }
 
   /* Add for ARM errata 838869, affects Cortex-M4, Cortex-M4F
      Store immediate overlapping exception return operation might vector to incorrect interrupt. */

@@ -1106,7 +1106,7 @@
                               <setting name="channel_id" value="CHANNEL_0"/>
                               <setting name="channelNumber" value="0"/>
                               <setting name="enableChain" value="false"/>
-                              <setting name="timerPeriod" value="1s"/>
+                              <setting name="timerPeriod" value="10ms"/>
                               <setting name="startTimer" value="true"/>
                               <setting name="enableInterrupt" value="true"/>
                               <struct name="interrupt">
