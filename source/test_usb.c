@@ -50,9 +50,15 @@
 #define MOTORSCMD 0xD0 //comando motor
 #define TESTCMD 0xD2 // COMANDO ON/OFF MOTOR
 #define ALIVECMD 0xF0 // comando alive
+#define ENABLE_MOTOR_CMD 0x01 //COMANDO ENABLE MOTOR
+#define DISABLE_MOTOR_CMD 0x02 // COMANDO DISABLE MOTOR
+#define SPEED_MOTOR_CMD 0x03
+#define ID_M_DIREC FLEXCAN_ID_STD(0x601) //ID CAN MOTOR DIRECCION
+#define ID_M_VEL FLEXCAN_ID_STD(0x607) //ID CAN MOTOR VELOCIDAD O TRACCION
 #define RX_MESSAGE_STD_BUFFER_NUM (0)
 #define RX_MESSAGE_EXT_BUFFER_NUM (1)
 #define TX_MESSAGE_BUFFER_NUM (2)
+#define TX_STD_MESSAGE_BUFFER_NUM (3)
 #define BATTERY_RECEIVE_ID 0x18FF50E5
 #define BATTERY_SEND_ID 0x1806E5F4
 #define ID_RFID_SENSOR FLEXCAN_ID_STD(0x100)
@@ -60,7 +66,19 @@
 #define ID_SEND_BATERIA FLEXCAN_ID_EXT(0x1806E5F4)//ID de msjs enviados desde placa a la bateria
 #define ID_REC_BATERIA FLEXCAN_ID_EXT(0x18FF50E5)//ID de msjs que recibe la placa desde la bateria
 
+static uint8_t BATTERY_CHARGE_MESSAGE[] = {0x02, 0x48, 0x01, 0x2C, 0x00, 0x00, 0x00, 0x00};
+
 #define MSJ_BAT 0x01
+// para funcion ChargetoCANbuf(); whatFormat
+#define DATA_STD 0x0A
+#define REMOTE_STD 0x1A
+#define DATA_EXT 0x2B
+#define REMOTE_EXT 0x3B
+
+//para CreateCANMessage(msj);
+#define ENABLE_MOTOR_CAN 0x02
+#define DISABLE_MOTOR_CAN 0x03
+
 
 /* TODO: insert other definitions and declarations here. */
 void EnviarDatos(uint8_t cmd);
@@ -74,6 +92,8 @@ static void flexcan_callback(CAN_Type *base, flexcan_handle_t *handle, status_t 
 void DecodeCANMessage();
 void DecodeRFIDSensor();
 void CreateCANMessage(uint8_t msj);
+void ActionQT();
+void ChargeToCANBuf(uint8_t whatFormat, uint8_t payloadCAN[], uint32_t id);
 
 /*******************************************************************************
  * Variables
@@ -107,16 +127,17 @@ typedef union {
 
 
 volatile uint32_t timerCounter;
-volatile _rx ringRx;
-volatile _tx ringTx;
+volatile _rx ringRx, auxRX;
+volatile _tx ringTx, auxTX;
 uint16_t timeoutUSB = 200;
 uint16_t timeoutBAT = 100;
-uint8_t rxBuf[256], txBuf[256];
+uint8_t rxBuf[256], txBuf[256], auxbufRX[256],auxbufTX[256], auxlenght;
 //uint8_t flag_carga_completa = 0;
-uint8_t msj_CAN_BAT[8] = {0x02, 0x48, 0x01, 0x2C, 0x00, 0x00, 0x00, 0x00};
+//uint8_t msj_CAN_BAT[8] = {0x02, 0x48, 0x01, 0x2C, 0x00, 0x00, 0x00, 0x00};
+//uint8_t msj_CAN_BAT2[8] = {0x00, 0x00, 0x00, 0x00, 0x0A, 0x0B, 0x0C, 0x0D};
 uint16_t magneticSensorBitStatus;
 uint16_t volt_bateria = 0;
-volatile _sFlag flag1, SensorsStatus;
+volatile _sFlag flag1, SensorsStatus, flagQT;
 volatile _sWork RFIDData[2],DestinationStation[2];
 
 #define SENSORSTATUS_0 	SensorsStatus.bit.b0 //Estado Sensor 0
@@ -129,7 +150,7 @@ volatile _sWork RFIDData[2],DestinationStation[2];
 #define SENSORSTATUS_7 	SensorsStatus.bit.b7 //Estado Sensor 7
 
 
-#define ALIVERECIVE 	flag1.bit.b0 //RECIBIO alive
+#define w 	flag1.bit.b0 //
 #define RX_CAN_COMPLETE flag1.bit.b1
 #define BATT_FULL_CHARGE flag1.bit.b2
 #define WWWW 			flag1.bit.b3
@@ -138,9 +159,19 @@ volatile _sWork RFIDData[2],DestinationStation[2];
 #define WWWWWWW 		flag1.bit.b6
 #define WWWWWWWW 		flag1.bit.b7
 
+//PARA COMANDOS RECIBIDOS POR QT
+#define ALIVE_RECIVE_CMD 	flagQT.bit.b0 //RECIBIO alive
+#define ENABLE_RECIVE_CMD 	flagQT.bit.b1
+#define DISABLE_RECIVE_CMD	flagQT.bit.b2
+#define AAAA 				flagQT.bit.b3
+#define AAAAA 				flagQT.bit.b4
+#define AAAAAA 				flagQT.bit.b5
+#define AAAAAAA 			flagQT.bit.b6
+#define AAAAAAAA 			flagQT.bit.b7
+
 flexcan_handle_t rxHandle, txHandle, flexcanHandle;
-flexcan_frame_t txFrame, RX_STD_Frame, RX_EXT_Frame;
-flexcan_mb_transfer_t TX_CAN_BUF, RX_EXT_CAN_BUF, RX_STD_CAN_BUF;//buffer para enviar,bufer no usado, buffer de recepcion
+flexcan_frame_t txFrame,txframe_STD, RX_STD_Frame, RX_EXT_Frame;
+flexcan_mb_transfer_t TX_CAN_BUF, RX_EXT_CAN_BUF, RX_STD_CAN_BUF,TX_STD_CAN_BUF;//buffer para enviar,bufer no usado, buffer de recepcion
 //flexcan_frame_t frame;
 flexcan_rx_mb_config_t mbConfigSTD, mbConfigEXT;
 
@@ -160,12 +191,18 @@ int main(void) {
     BOARD_InitDebugConsole();
     //kFLEXCAN_FrameFormatMix;
 
+    auxRX.buf = auxbufRX;
+    auxTX.buf = auxbufTX;
     ringTx.buf=txBuf;
     ringRx.buf=rxBuf;
     ringTx.iW=0;
     ringTx.iR=0;
     ringRx.iW=0;
     ringRx.iR=0;
+    auxTX.iW=0;
+    auxTX.iR=0;
+    auxRX.iW=0;
+    auxRX.iR=0;
     LED_RED_INIT(1);
     LED_GREEN_INIT(1);
     LED_BLUE_INIT(1);
@@ -173,12 +210,17 @@ int main(void) {
 
     //TX_CAN_BUF.frame->format = kFLEXCAN_FrameFormatStandard;
     txFrame.type = kFLEXCAN_FrameTypeData;
+    txFrame.length = 8;
+    txframe_STD.type = kFLEXCAN_FrameTypeData;
+    txframe_STD.length = 8;
     //txFrame.format = kFLEXCAN_FrameFormatExtend;
     //txFrame.id = ID_SEND_BATERIA;
     //txFrame.length = 8;
     //TX_CAN_BUF.frame->type = kFLEXCAN_FrameTypeData;
     TX_CAN_BUF.mbIdx = TX_MESSAGE_BUFFER_NUM;
     TX_CAN_BUF.frame = &txFrame;
+    TX_STD_CAN_BUF.mbIdx = TX_STD_MESSAGE_BUFFER_NUM;
+    TX_STD_CAN_BUF.frame = &txframe_STD;
 
     RX_STD_CAN_BUF.mbIdx = RX_MESSAGE_STD_BUFFER_NUM;
     RX_STD_CAN_BUF.frame = &RX_STD_Frame;
@@ -225,11 +267,14 @@ int main(void) {
 
     	Decode();
 
-
-    	if(ALIVERECIVE){
+    	/*if(ALIVERECIVE){
     		ALIVERECIVE = 0;
     		LED_GREEN_TOGGLE();
     		EnviarDatos(TESTCMD);
+    	}*/
+
+    	if(flagQT.byte){ //maquina de estado para comandos recibidos de QT
+    		ActionQT();
     	}
 
     	if(RX_CAN_COMPLETE){//recibe exitosamente un msj por CAN
@@ -407,6 +452,7 @@ void Decode(){
             break;
         case 4:
             ringRx.nBytes = ringRx.buf[ringRx.iR];
+            auxlenght = ringRx.nBytes;
             ringRx.header++;
             break;
         case 5:
@@ -447,10 +493,52 @@ void Decode(){
 }
 
 void RecibirDatos(uint8_t head){
+	//volatile uint8_t tempARRAY[10];
 	switch (ringRx.buf[head++]){
 		case 0xD2:
-			ALIVERECIVE = 1;
+			ALIVE_RECIVE_CMD = 1;
 			//algo
+		break;
+		case ENABLE_MOTOR_CMD:
+			ENABLE_RECIVE_CMD = 1;
+			auxRX.header=ringRx.buf[head++]; //ID
+			auxRX.buf[0]=ringRx.buf[head++];
+			auxRX.buf[1]=ringRx.buf[head++];
+			auxRX.buf[2]=ringRx.buf[head++];
+			auxRX.buf[3]=ringRx.buf[head++];
+			auxRX.buf[4]=ringRx.buf[head++];
+			auxRX.buf[5]=ringRx.buf[head++];
+			auxRX.buf[6]=ringRx.buf[head++];
+			auxRX.buf[7]=ringRx.buf[head++];
+			//auxRX.buf[9]=ringRx.buf[head++];
+			/*auxRX.buf[auxRX.iW++] = ringRx.buf[head++];
+			auxRX.buf[auxRX.iW++] = ringRx.buf[head++];
+			auxRX.buf[auxRX.iW++] = ringRx.buf[head++];
+			auxRX.buf[auxRX.iW++] = ringRx.buf[head++];
+			auxRX.buf[auxRX.iW++] = ringRx.buf[head++];
+			auxRX.buf[auxRX.iW++] = ringRx.buf[head++];
+			auxRX.buf[auxRX.iW++] = ringRx.buf[head++];
+			auxRX.buf[auxRX.iW++] = ringRx.buf[head++];
+			auxRX.buf[auxRX.iW++] = ringRx.buf[head++];*/
+
+
+			/*uint8_t auxhead = head;
+			for (i = 0; i < auxhead+auxlenght; i++) {
+				auxbuf[i]=ringRx.buf[head++];
+			}*/
+
+		break;
+		case DISABLE_MOTOR_CMD:
+			DISABLE_RECIVE_CMD = 1;
+			auxRX.header=ringRx.buf[head++];
+			auxRX.buf[0]=ringRx.buf[head++];
+			auxRX.buf[1]=ringRx.buf[head++];
+			auxRX.buf[2]=ringRx.buf[head++];
+			auxRX.buf[3]=ringRx.buf[head++];
+			auxRX.buf[4]=ringRx.buf[head++];
+			auxRX.buf[5]=ringRx.buf[head++];
+			auxRX.buf[6]=ringRx.buf[head++];
+			auxRX.buf[7]=ringRx.buf[head++];
 		break;
 	}
 }
@@ -516,22 +604,85 @@ void CreateCANMessage(uint8_t msj){
 
 	switch(msj){
 	case 0x01:
-		txFrame.format = kFLEXCAN_FrameFormatExtend;
-		txFrame.id = ID_SEND_BATERIA;
-		txFrame.length = 8;
-		txFrame.dataByte0 = 0x02;
+		//txFrame.format = kFLEXCAN_FrameFormatExtend;
+		//txFrame.id = ID_SEND_BATERIA;
+
+		//uint8_t BATTERY_CHARGE_MESSAGE[] = {0x02, 0x48, 0x01, 0x2C, 0x00, 0x00, 0x00, 0x00};
+		ChargeToCANBuf(DATA_EXT, BATTERY_CHARGE_MESSAGE, ID_SEND_BATERIA);
+
+		//memcpy(&txFrame.dataWord0, BATTERY_CHARGE_MESSAGE, 8);
+		//memcpy(&txFrame.dataWord1, &BATTERY_CHARGE_MESSAGE2, 8);
+		/*txFrame.dataByte0 = 0x02;
 		txFrame.dataByte1 = 0x48;
 		txFrame.dataByte2 = 0x01;
 		txFrame.dataByte3 = 0x2C;
 		txFrame.dataByte4 = 0x00;
 		txFrame.dataByte5 = 0x00;
 		txFrame.dataByte6 = 0x00;
-		txFrame.dataByte7 = 0x00;
-		break;
+		txFrame.dataByte7 = 0x00;*/
+	break;
+	case ENABLE_MOTOR_CAN:
+		ChargeToCANBuf(DATA_STD, auxRX.buf, FLEXCAN_ID_STD(auxRX.header));
+	break;
+	case DISABLE_MOTOR_CAN:
+		ChargeToCANBuf(DATA_STD, auxRX.buf, FLEXCAN_ID_STD(auxRX.header));
+	break;
 	}
 	FLEXCAN_TransferSendNonBlocking(CAN0, &flexcanHandle, &TX_CAN_BUF);
 }
 
+void ChargeToCANBuf(uint8_t whatFormat, uint8_t payloadCAN[], uint32_t id){
+	switch(whatFormat){
+	case DATA_EXT:
+		txFrame.type = kFLEXCAN_FrameTypeData;
+		txFrame.format = kFLEXCAN_FrameFormatExtend;
+		txFrame.id = id;
+		txFrame.dataByte0 = payloadCAN[0];
+		txFrame.dataByte1 = payloadCAN[1];
+		txFrame.dataByte2 = payloadCAN[2];
+		txFrame.dataByte3 = payloadCAN[3];
+		txFrame.dataByte4 = payloadCAN[4];
+		txFrame.dataByte5 = payloadCAN[5];
+		txFrame.dataByte6 = payloadCAN[6];
+		txFrame.dataByte7 = payloadCAN[7];
+	break;
+	case DATA_STD:
+		txframe_STD.type = kFLEXCAN_FrameTypeData;
+		txframe_STD.format = kFLEXCAN_FrameFormatStandard;
+		txframe_STD.id = id;
+		txframe_STD.dataByte0 = payloadCAN[0];
+		txframe_STD.dataByte1 = payloadCAN[1];
+		txframe_STD.dataByte2 = payloadCAN[2];
+		txframe_STD.dataByte3 = payloadCAN[3];
+		txframe_STD.dataByte4 = payloadCAN[4];
+		txframe_STD.dataByte5 = payloadCAN[5];
+		txframe_STD.dataByte6 = payloadCAN[6];
+		txframe_STD.dataByte7 = payloadCAN[7];
+	break;
+	case REMOTE_EXT:
+	break;
+	case REMOTE_STD:
+	break;
+	}
+}
+
+void ActionQT(){
+	if(ALIVE_RECIVE_CMD){
+		ALIVE_RECIVE_CMD = 0;
+	    LED_GREEN_TOGGLE();
+	    EnviarDatos(TESTCMD);
+	}
+	if (ENABLE_RECIVE_CMD) {
+		ENABLE_RECIVE_CMD = 0;
+		CreateCANMessage(ENABLE_MOTOR_CAN);
+		return;
+	}
+	if (DISABLE_RECIVE_CMD) {
+		DISABLE_RECIVE_CMD = 0;
+		CreateCANMessage(DISABLE_MOTOR_CAN);
+		return;
+	}
+}
 
 /* PIT0_IRQn interrupt handler */
 void PIT_CHANNEL_0_IRQHANDLER(void) {
