@@ -191,18 +191,18 @@ int main(void) {
     BOARD_InitDebugConsole();
     //kFLEXCAN_FrameFormatMix;
 
-    auxRX.buf = auxbufRX;
-    auxTX.buf = auxbufTX;
+    //auxRX.buf = auxbufRX;
+    //auxTX.buf = auxbufTX;
     ringTx.buf=txBuf;
     ringRx.buf=rxBuf;
     ringTx.iW=0;
     ringTx.iR=0;
     ringRx.iW=0;
     ringRx.iR=0;
-    auxTX.iW=0;
+    /*auxTX.iW=0;
     auxTX.iR=0;
     auxRX.iW=0;
-    auxRX.iR=0;
+    auxRX.iR=0;*/
     LED_RED_INIT(1);
     LED_GREEN_INIT(1);
     LED_BLUE_INIT(1);
@@ -211,16 +211,16 @@ int main(void) {
     //TX_CAN_BUF.frame->format = kFLEXCAN_FrameFormatStandard;
     txFrame.type = kFLEXCAN_FrameTypeData;
     txFrame.length = 8;
-    txframe_STD.type = kFLEXCAN_FrameTypeData;
-    txframe_STD.length = 8;
+    //txframe_STD.type = kFLEXCAN_FrameTypeData;
+    //txframe_STD.length = 8;
     //txFrame.format = kFLEXCAN_FrameFormatExtend;
     //txFrame.id = ID_SEND_BATERIA;
     //txFrame.length = 8;
     //TX_CAN_BUF.frame->type = kFLEXCAN_FrameTypeData;
     TX_CAN_BUF.mbIdx = TX_MESSAGE_BUFFER_NUM;
     TX_CAN_BUF.frame = &txFrame;
-    TX_STD_CAN_BUF.mbIdx = TX_STD_MESSAGE_BUFFER_NUM;
-    TX_STD_CAN_BUF.frame = &txframe_STD;
+    /*TX_STD_CAN_BUF.mbIdx = TX_STD_MESSAGE_BUFFER_NUM;
+    TX_STD_CAN_BUF.frame = &txframe_STD;*/
 
     RX_STD_CAN_BUF.mbIdx = RX_MESSAGE_STD_BUFFER_NUM;
     RX_STD_CAN_BUF.frame = &RX_STD_Frame;
@@ -260,18 +260,12 @@ int main(void) {
     	    timeoutUSB = 400;
     	}
 
-    	if(!timeoutBAT && !BATT_FULL_CHARGE){
+    	/*if(!timeoutBAT && !BATT_FULL_CHARGE){
     		CreateCANMessage(MSJ_BAT);
     		timeoutBAT = 100;
-    	}
+    	}*/
 
     	Decode();
-
-    	/*if(ALIVERECIVE){
-    		ALIVERECIVE = 0;
-    		LED_GREEN_TOGGLE();
-    		EnviarDatos(TESTCMD);
-    	}*/
 
     	if(flagQT.byte){ //maquina de estado para comandos recibidos de QT
     		ActionQT();
@@ -421,7 +415,7 @@ void Decode(){
                 ringRx.header++;
             else{
                 ringRx.header = 0;
-                ringRx.iR--;
+                //ringRx.iR--;
             }
             break;
         case 1:
@@ -429,7 +423,7 @@ void Decode(){
                 ringRx.header++;
             else{
                 ringRx.header = 0;
-                ringRx.iR--;
+                //ringRx.iR--;
             }
             break;
         case 2:
@@ -437,7 +431,7 @@ void Decode(){
                 ringRx.header++;
             else{
                 ringRx.header = 0;
-                ringRx.iR--;
+                //ringRx.iR--;
             }
             break;
         case 3:
@@ -447,12 +441,12 @@ void Decode(){
             }
             else{
                 ringRx.header = 0;
-                ringRx.iR--;
+                //ringRx.iR--;
             }
             break;
         case 4:
             ringRx.nBytes = ringRx.buf[ringRx.iR];
-            auxlenght = ringRx.nBytes;
+            //auxlenght = ringRx.nBytes;
             ringRx.header++;
             break;
         case 5:
@@ -460,30 +454,35 @@ void Decode(){
                 ringRx.header++;
             else{
                 ringRx.header = 0;
-                ringRx.iR--;
+                //ringRx.iR--;
             }
+
             break;
         case 6:
             if (ringRx.buf[ringRx.iR] == ':')
             {
-                ringRx.cks= 'U'^'N'^'E'^'R'^ringRx.nBytes^0x00^':';
+                ringRx.cks = 'U'^'N'^'E'^'R'^ringRx.nBytes^0x00^':';
                 ringRx.header++;
                 ringRx.iData = ringRx.iR+1;
-                LED_RED_TOGGLE();
+                //LED_RED_TOGGLE();
             }
             else{
                 ringRx.header = 0;
-                ringRx.iR--;
+                //ringRx.iR--;
             }
             break;
 
         case 7:
-        	UpdateChecksum();
-        	CheckBytesLeft();
-        	if(ringRx.nBytes == 0)
-        	{
-        	CheckChecksumAndReceiveData();
-        	}
+        	if(ringRx.nBytes>1){
+				ringRx.cks^=ringRx.buf[ringRx.iR];
+			}
+			ringRx.nBytes--;
+			if(ringRx.nBytes==0){
+				ringRx.header=0;
+				if(ringRx.cks==ringRx.buf[ringRx.iR]){
+					RecibirDatos(ringRx.iData);
+				}
+			}
             break;
         default:
             ringRx.header = 0;
@@ -501,47 +500,38 @@ void RecibirDatos(uint8_t head){
 		break;
 		case ENABLE_MOTOR_CMD:
 			ENABLE_RECIVE_CMD = 1;
-			auxRX.header=ringRx.buf[head++]; //ID
-			auxRX.buf[0]=ringRx.buf[head++];
-			auxRX.buf[1]=ringRx.buf[head++];
-			auxRX.buf[2]=ringRx.buf[head++];
-			auxRX.buf[3]=ringRx.buf[head++];
-			auxRX.buf[4]=ringRx.buf[head++];
-			auxRX.buf[5]=ringRx.buf[head++];
-			auxRX.buf[6]=ringRx.buf[head++];
-			auxRX.buf[7]=ringRx.buf[head++];
-			//auxRX.buf[9]=ringRx.buf[head++];
-			/*auxRX.buf[auxRX.iW++] = ringRx.buf[head++];
-			auxRX.buf[auxRX.iW++] = ringRx.buf[head++];
-			auxRX.buf[auxRX.iW++] = ringRx.buf[head++];
-			auxRX.buf[auxRX.iW++] = ringRx.buf[head++];
-			auxRX.buf[auxRX.iW++] = ringRx.buf[head++];
-			auxRX.buf[auxRX.iW++] = ringRx.buf[head++];
-			auxRX.buf[auxRX.iW++] = ringRx.buf[head++];
-			auxRX.buf[auxRX.iW++] = ringRx.buf[head++];
-			auxRX.buf[auxRX.iW++] = ringRx.buf[head++];*/
-
-
-			/*uint8_t auxhead = head;
-			for (i = 0; i < auxhead+auxlenght; i++) {
-				auxbuf[i]=ringRx.buf[head++];
-			}*/
+			for (uint8_t var = 0; var < 9; var++) {
+				auxbufRX[0]=ringRx.buf[head++];
+			}
+			/*auxbufRX[0]=ringRx.buf[head++];//ID
+			auxbufRX[1]=ringRx.buf[head++];
+			auxbufRX[2]=ringRx.buf[head++];
+			auxbufRX[3]=ringRx.buf[head++];
+			auxbufRX[4]=ringRx.buf[head++];
+			auxbufRX[5]=ringRx.buf[head++];
+			auxbufRX[6]=ringRx.buf[head++];
+			auxbufRX[7]=ringRx.buf[head++];
+			auxbufRX[8]=ringRx.buf[head++];*/
 
 		break;
 		case DISABLE_MOTOR_CMD:
 			DISABLE_RECIVE_CMD = 1;
-			auxRX.header=ringRx.buf[head++];
-			auxRX.buf[0]=ringRx.buf[head++];
-			auxRX.buf[1]=ringRx.buf[head++];
-			auxRX.buf[2]=ringRx.buf[head++];
-			auxRX.buf[3]=ringRx.buf[head++];
-			auxRX.buf[4]=ringRx.buf[head++];
-			auxRX.buf[5]=ringRx.buf[head++];
-			auxRX.buf[6]=ringRx.buf[head++];
-			auxRX.buf[7]=ringRx.buf[head++];
+			for (uint8_t var = 0; var < 9; var++) {
+				auxbufRX[0]=ringRx.buf[head++];
+			}
+			/*auxbufRX[0]=ringRx.buf[head++]; //ID
+			auxbufRX[1]=ringRx.buf[head++];
+			auxbufRX[2]=ringRx.buf[head++];
+			auxbufRX[3]=ringRx.buf[head++];
+			auxbufRX[4]=ringRx.buf[head++];
+			auxbufRX[5]=ringRx.buf[head++];
+			auxbufRX[6]=ringRx.buf[head++];
+			auxbufRX[7]=ringRx.buf[head++];
+			auxbufRX[8]=ringRx.buf[head++];*/
 		break;
 	}
 }
+
 
 void UpdateChecksum()
 {
@@ -551,22 +541,22 @@ void UpdateChecksum()
     }
 }
 
-void CheckBytesLeft()
+/*void CheckBytesLeft()
 {
     ringRx.nBytes--;
     if(ringRx.nBytes == 0)
     {
         ringRx.header = 0;
     }
-}
+}*/
 
-void CheckChecksumAndReceiveData()
+/*void CheckChecksumAndReceiveData()
 {
     if(ringRx.cks == ringRx.buf[ringRx.iR])
     {
         RecibirDatos(ringRx.iData);
     }
-}
+}*/
 
 void EnviarDatos(uint8_t cmd){
 	ringTx.buf[ringTx.iW++]='U';
@@ -587,6 +577,24 @@ void EnviarDatos(uint8_t cmd){
 			ringTx.buf[ringTx.iW++] = ':';
 			ringTx.buf[ringTx.iW++] = cmd;
 		break;
+		case ENABLE_MOTOR_CMD:
+			ringTx.buf[ringTx.iW++] = 0x0B;
+			ringTx.buf[ringTx.iW++] = 0x00;
+			ringTx.buf[ringTx.iW++] = ':';
+			ringTx.buf[ringTx.iW++] = cmd;
+			for (uint8_t var = 0; var < 9; var++) {
+				ringTx.buf[ringTx.iW++] = auxbufRX[var++];
+			}
+		break;
+		case DISABLE_MOTOR_CMD:
+			ringTx.buf[ringTx.iW++] = 0x0B;
+			ringTx.buf[ringTx.iW++] = 0x00;
+			ringTx.buf[ringTx.iW++] = ':';
+			ringTx.buf[ringTx.iW++] = cmd;
+			for (uint8_t var = 0; var < 9; var++) {
+				ringTx.buf[ringTx.iW++] = auxbufRX[var++];
+			}
+			break;
 		default:
 		break;
 	}
@@ -596,8 +604,8 @@ void EnviarDatos(uint8_t cmd){
 		ringTx.cks^=ringTx.buf[i];
 		//pc.printf("%d - %x - %d   v: %d \n",i,cks,cks,tx[i]);
 	}
-	if(ringTx.cks>0)
-		ringTx.buf[ringTx.iW++]=ringTx.cks;
+	//if(ringTx.cks>0)
+	ringTx.buf[ringTx.iW++]=ringTx.cks;
 }
 
 void CreateCANMessage(uint8_t msj){
@@ -622,13 +630,13 @@ void CreateCANMessage(uint8_t msj){
 		txFrame.dataByte7 = 0x00;*/
 	break;
 	case ENABLE_MOTOR_CAN:
-		ChargeToCANBuf(DATA_STD, auxRX.buf, FLEXCAN_ID_STD(auxRX.header));
+		ChargeToCANBuf(DATA_STD, auxbufRX, FLEXCAN_ID_STD(auxRX.header));
 	break;
 	case DISABLE_MOTOR_CAN:
-		ChargeToCANBuf(DATA_STD, auxRX.buf, FLEXCAN_ID_STD(auxRX.header));
+		ChargeToCANBuf(DATA_STD, auxbufRX, FLEXCAN_ID_STD(auxRX.header));
 	break;
 	}
-	FLEXCAN_TransferSendNonBlocking(CAN0, &flexcanHandle, &TX_CAN_BUF);
+	//FLEXCAN_TransferSendNonBlocking(CAN0, &flexcanHandle, &TX_CAN_BUF);
 }
 
 void ChargeToCANBuf(uint8_t whatFormat, uint8_t payloadCAN[], uint32_t id){
@@ -674,13 +682,15 @@ void ActionQT(){
 	}
 	if (ENABLE_RECIVE_CMD) {
 		ENABLE_RECIVE_CMD = 0;
+		LED_BLUE_TOGGLE();
+		EnviarDatos(ENABLE_MOTOR_CMD);
 		CreateCANMessage(ENABLE_MOTOR_CAN);
-		return;
 	}
 	if (DISABLE_RECIVE_CMD) {
 		DISABLE_RECIVE_CMD = 0;
+		LED_RED_TOGGLE();
+		EnviarDatos(DISABLE_MOTOR_CMD);
 		CreateCANMessage(DISABLE_MOTOR_CAN);
-		return;
 	}
 }
 
