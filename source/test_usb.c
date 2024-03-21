@@ -170,8 +170,8 @@ volatile _sWork RFIDData[2],DestinationStation[2];
 #define AAAAAAAA 			flagQT.bit.b7
 
 flexcan_handle_t rxHandle, txHandle, flexcanHandle;
-flexcan_frame_t txFrame,txframe_STD, RX_STD_Frame, RX_EXT_Frame;
-flexcan_mb_transfer_t TX_CAN_BUF, RX_EXT_CAN_BUF, RX_STD_CAN_BUF,TX_STD_CAN_BUF;//buffer para enviar,bufer no usado, buffer de recepcion
+flexcan_frame_t txFrame, RX_STD_Frame, RX_EXT_Frame;
+flexcan_mb_transfer_t TX_CAN_BUF, RX_EXT_CAN_BUF, RX_STD_CAN_BUF;//buffer para enviar,bufer no usado, buffer de recepcion
 //flexcan_frame_t frame;
 flexcan_rx_mb_config_t mbConfigSTD, mbConfigEXT;
 
@@ -311,6 +311,7 @@ void DecodeCANMessage(){
 }
 
 static void flexcan_callback(CAN_Type *base, flexcan_handle_t *handle, status_t status, uint32_t result, void *userData){
+	//LED_BLUE_TOGGLE();
 	switch (status){
 	/* Process FlexCAN Rx event. */
 	case kStatus_FLEXCAN_RxIdle:
@@ -344,7 +345,7 @@ static void flexcan_callback(CAN_Type *base, flexcan_handle_t *handle, status_t 
 		break;
 		/* Process FlexCAN Tx event. */
 	case kStatus_FLEXCAN_TxIdle:
-		//LED_GREEN_TOGGLE();
+		LED_GREEN_TOGGLE();
 		if (TX_MESSAGE_BUFFER_NUM == result)
 		{
 			//txComplete = 1;
@@ -493,6 +494,7 @@ void Decode(){
 
 void RecibirDatos(uint8_t head){
 	//volatile uint8_t tempARRAY[10];
+	LED_RED_TOGGLE();
 	switch (ringRx.buf[head++]){
 		case 0xD2:
 			ALIVE_RECIVE_CMD = 1;
@@ -501,7 +503,7 @@ void RecibirDatos(uint8_t head){
 		case ENABLE_MOTOR_CMD:
 			ENABLE_RECIVE_CMD = 1;
 			for (uint8_t var = 0; var < 9; var++) {
-				auxbufRX[0]=ringRx.buf[head++];
+				auxbufRX[var]=ringRx.buf[head++];
 			}
 			/*auxbufRX[0]=ringRx.buf[head++];//ID
 			auxbufRX[1]=ringRx.buf[head++];
@@ -517,7 +519,7 @@ void RecibirDatos(uint8_t head){
 		case DISABLE_MOTOR_CMD:
 			DISABLE_RECIVE_CMD = 1;
 			for (uint8_t var = 0; var < 9; var++) {
-				auxbufRX[0]=ringRx.buf[head++];
+				auxbufRX[var]=ringRx.buf[head++];
 			}
 			/*auxbufRX[0]=ringRx.buf[head++]; //ID
 			auxbufRX[1]=ringRx.buf[head++];
@@ -630,13 +632,13 @@ void CreateCANMessage(uint8_t msj){
 		txFrame.dataByte7 = 0x00;*/
 	break;
 	case ENABLE_MOTOR_CAN:
-		ChargeToCANBuf(DATA_STD, auxbufRX, FLEXCAN_ID_STD(auxRX.header));
+		ChargeToCANBuf(DATA_STD, auxbufRX, FLEXCAN_ID_STD(auxbufRX[0] + 0x600));
 	break;
 	case DISABLE_MOTOR_CAN:
-		ChargeToCANBuf(DATA_STD, auxbufRX, FLEXCAN_ID_STD(auxRX.header));
+		ChargeToCANBuf(DATA_STD, auxbufRX, FLEXCAN_ID_STD(auxbufRX[0] + 0x600));
 	break;
 	}
-	//FLEXCAN_TransferSendNonBlocking(CAN0, &flexcanHandle, &TX_CAN_BUF);
+	FLEXCAN_TransferSendNonBlocking(CAN0, &flexcanHandle, &TX_CAN_BUF);
 }
 
 void ChargeToCANBuf(uint8_t whatFormat, uint8_t payloadCAN[], uint32_t id){
@@ -645,27 +647,27 @@ void ChargeToCANBuf(uint8_t whatFormat, uint8_t payloadCAN[], uint32_t id){
 		txFrame.type = kFLEXCAN_FrameTypeData;
 		txFrame.format = kFLEXCAN_FrameFormatExtend;
 		txFrame.id = id;
-		txFrame.dataByte0 = payloadCAN[0];
-		txFrame.dataByte1 = payloadCAN[1];
-		txFrame.dataByte2 = payloadCAN[2];
-		txFrame.dataByte3 = payloadCAN[3];
-		txFrame.dataByte4 = payloadCAN[4];
-		txFrame.dataByte5 = payloadCAN[5];
-		txFrame.dataByte6 = payloadCAN[6];
-		txFrame.dataByte7 = payloadCAN[7];
+		txFrame.dataByte0 = payloadCAN[1];
+		txFrame.dataByte1 = payloadCAN[2];
+		txFrame.dataByte2 = payloadCAN[3];
+		txFrame.dataByte3 = payloadCAN[4];
+		txFrame.dataByte4 = payloadCAN[5];
+		txFrame.dataByte5 = payloadCAN[6];
+		txFrame.dataByte6 = payloadCAN[7];
+		txFrame.dataByte7 = payloadCAN[8];
 	break;
 	case DATA_STD:
-		txframe_STD.type = kFLEXCAN_FrameTypeData;
-		txframe_STD.format = kFLEXCAN_FrameFormatStandard;
-		txframe_STD.id = id;
-		txframe_STD.dataByte0 = payloadCAN[0];
-		txframe_STD.dataByte1 = payloadCAN[1];
-		txframe_STD.dataByte2 = payloadCAN[2];
-		txframe_STD.dataByte3 = payloadCAN[3];
-		txframe_STD.dataByte4 = payloadCAN[4];
-		txframe_STD.dataByte5 = payloadCAN[5];
-		txframe_STD.dataByte6 = payloadCAN[6];
-		txframe_STD.dataByte7 = payloadCAN[7];
+	    txFrame.type = kFLEXCAN_FrameTypeData;
+		txFrame.format = kFLEXCAN_FrameFormatStandard;
+		txFrame.id = id;
+		txFrame.dataByte0 = payloadCAN[1];
+		txFrame.dataByte1 = payloadCAN[2];
+		txFrame.dataByte2 = payloadCAN[3];
+		txFrame.dataByte3 = payloadCAN[4];
+		txFrame.dataByte4 = payloadCAN[5];
+		txFrame.dataByte5 = payloadCAN[6];
+		txFrame.dataByte6 = payloadCAN[7];
+		txFrame.dataByte7 = payloadCAN[8];
 	break;
 	case REMOTE_EXT:
 	break;
@@ -682,13 +684,11 @@ void ActionQT(){
 	}
 	if (ENABLE_RECIVE_CMD) {
 		ENABLE_RECIVE_CMD = 0;
-		LED_BLUE_TOGGLE();
 		EnviarDatos(ENABLE_MOTOR_CMD);
 		CreateCANMessage(ENABLE_MOTOR_CAN);
 	}
 	if (DISABLE_RECIVE_CMD) {
 		DISABLE_RECIVE_CMD = 0;
-		LED_RED_TOGGLE();
 		EnviarDatos(DISABLE_MOTOR_CMD);
 		CreateCANMessage(DISABLE_MOTOR_CAN);
 	}
