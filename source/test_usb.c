@@ -643,7 +643,7 @@ void EnviarDatos(uint8_t cmd){
 			ringTx.buf[ringTx.iW++] = ':';
 			ringTx.buf[ringTx.iW++] = cmd;
 			for (uint8_t var = 0; var < 9; var++) {
-				ringTx.buf[ringTx.iW++] = auxbufRX[var++];
+				ringTx.buf[ringTx.iW++] = auxbufRX[var];
 			}
 		break;
 		case DISABLE_MOTOR_CMD:
@@ -652,7 +652,7 @@ void EnviarDatos(uint8_t cmd){
 			ringTx.buf[ringTx.iW++] = ':';
 			ringTx.buf[ringTx.iW++] = cmd;
 			for (uint8_t var = 0; var < 9; var++) {
-				ringTx.buf[ringTx.iW++] = auxbufRX[var++];
+				ringTx.buf[ringTx.iW++] = auxbufRX[var];
 			}
 			break;
 		default:
@@ -773,43 +773,43 @@ void ActionQT(){
 		EnviarDatos(DISABLE_MOTOR_CMD);
 		CreateCANMessage(DISABLE_MOTOR_CMD);
 	}
-	if (SPEED_MODE_CMD) {
+	if (SPEED_MODE_REC_CMD) {
 		SPEED_MODE_REC_CMD = 0;
 		//LED_BLUE_TOGGLE();
 		//EnviarDatos(ENABLE_MOTOR_CMD);
 		CreateCANMessage(SPEED_MODE_CMD);
 	}
-	if (POSITION_MODE_CMD) {
+	if (POSITION_MODE_REC_CMD) {
 		POSITION_MODE_REC_CMD = 0;
 		//LED_BLUE_TOGGLE();
 		//EnviarDatos(ENABLE_MOTOR_CMD);
 		CreateCANMessage(POSITION_MODE_CMD);
 	}
-	if (SPEED_MOTOR_CMD) {
+	if (TARGET_SPEED_REC_CMD) {
 		TARGET_SPEED_REC_CMD = 0;
-		//LED_BLUE_TOGGLE();
+		LED_BLUE_TOGGLE();
 		//EnviarDatos(ENABLE_MOTOR_CMD);
 		CreateCANMessage(SPEED_MOTOR_CMD);
 	}
-	if (POS_MOTOR_CMD) {
+	if (TARGET_POS_REC_CMD) {
 		TARGET_POS_REC_CMD = 0;
 		//LED_BLUE_TOGGLE();
 		//EnviarDatos(ENABLE_MOTOR_CMD);
 		CreateCANMessage(POS_MOTOR_CMD);
 	}
-	if (READY_POSI_CMD) {
+	if (READY_POS_REC_CMD) {
 		READY_POS_REC_CMD = 0;
 		//LED_BLUE_TOGGLE();
 		//EnviarDatos(ENABLE_MOTOR_CMD);
 		CreateCANMessage(READY_POSI_CMD);
 	}
-	if (INVERTIR_1_CMD) {
+	if (INVERTIR1_RECIVE_CMD) {
 		INVERTIR1_RECIVE_CMD = 0;
 		//LED_BLUE_TOGGLE();
 		//EnviarDatos(ENABLE_MOTOR_CMD);
 		CreateCANMessage(INVERTIR_1_CMD);
 	}
-	if (INVERTIR_2_CMD) {
+	if (INVERTIR2_RECIVE_CMD) {
 		INVERTIR2_RECIVE_CMD = 0;
 		//LED_BLUE_TOGGLE();
 		//EnviarDatos(ENABLE_MOTOR_CMD);
