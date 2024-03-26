@@ -537,15 +537,6 @@ void RecibirDatos(uint8_t head){
 			for (uint8_t var = 0; var < 9; var++) {
 				auxbufRX[var]=ringRx.buf[head++];
 			}
-			/*auxbufRX[0]=ringRx.buf[head++]; //ID
-			auxbufRX[1]=ringRx.buf[head++];
-			auxbufRX[2]=ringRx.buf[head++];
-			auxbufRX[3]=ringRx.buf[head++];
-			auxbufRX[4]=ringRx.buf[head++];
-			auxbufRX[5]=ringRx.buf[head++];
-			auxbufRX[6]=ringRx.buf[head++];
-			auxbufRX[7]=ringRx.buf[head++];
-			auxbufRX[8]=ringRx.buf[head++];*/
 		break;
 		case SPEED_MODE_CMD:
 			SPEED_MODE_REC_CMD = 1;
@@ -654,7 +645,25 @@ void EnviarDatos(uint8_t cmd){
 			for (uint8_t var = 0; var < 9; var++) {
 				ringTx.buf[ringTx.iW++] = auxbufRX[var];
 			}
-			break;
+		break;
+		case SPEED_MODE_CMD:
+			ringTx.buf[ringTx.iW++] = 0x0B;
+			ringTx.buf[ringTx.iW++] = 0x00;
+			ringTx.buf[ringTx.iW++] = ':';
+			ringTx.buf[ringTx.iW++] = cmd;
+			for (uint8_t var = 0; var < 9; var++) {
+				ringTx.buf[ringTx.iW++] = auxbufRX[var];
+			}
+		break;
+		case SPEED_MOTOR_CMD:
+			ringTx.buf[ringTx.iW++] = 0x0B;
+			ringTx.buf[ringTx.iW++] = 0x00;
+			ringTx.buf[ringTx.iW++] = ':';
+			ringTx.buf[ringTx.iW++] = cmd;
+			for (uint8_t var = 0; var < 9; var++) {
+				ringTx.buf[ringTx.iW++] = auxbufRX[var];
+			}
+		break;
 		default:
 		break;
 	}
@@ -671,24 +680,9 @@ void EnviarDatos(uint8_t cmd){
 void CreateCANMessage(uint8_t msj){
 
 	switch(msj){
-	case 0xFF:
-		//txFrame.format = kFLEXCAN_FrameFormatExtend;
-		//txFrame.id = ID_SEND_BATERIA;
-
-		//uint8_t BATTERY_CHARGE_MESSAGE[] = {0x02, 0x48, 0x01, 0x2C, 0x00, 0x00, 0x00, 0x00};
-		ChargeToCANBuf(DATA_EXT, BATTERY_CHARGE_MESSAGE, ID_SEND_BATERIA);
-
-		//memcpy(&txFrame.dataWord0, BATTERY_CHARGE_MESSAGE, 8);
-		//memcpy(&txFrame.dataWord1, &BATTERY_CHARGE_MESSAGE2, 8);
-		/*txFrame.dataByte0 = 0x02;
-		txFrame.dataByte1 = 0x48;
-		txFrame.dataByte2 = 0x01;
-		txFrame.dataByte3 = 0x2C;
-		txFrame.dataByte4 = 0x00;
-		txFrame.dataByte5 = 0x00;
-		txFrame.dataByte6 = 0x00;
-		txFrame.dataByte7 = 0x00;*/
-	break;
+	//case 0xFF:
+		//ChargeToCANBuf(DATA_EXT, BATTERY_CHARGE_MESSAGE, ID_SEND_BATERIA);
+	//break;
 	case ENABLE_MOTOR_CMD:
 		ChargeToCANBuf(DATA_STD, auxbufRX, FLEXCAN_ID_STD(auxbufRX[0] + 0x600));
 	break;
@@ -758,25 +752,25 @@ void ChargeToCANBuf(uint8_t whatFormat, uint8_t payloadCAN[], uint32_t id){
 void ActionQT(){
 	if(ALIVE_RECIVE_CMD){
 		ALIVE_RECIVE_CMD = 0;
-	    LED_GREEN_TOGGLE();
+	    //LED_GREEN_TOGGLE();
 	    EnviarDatos(TESTCMD);
 	}
 	if (ENABLE_RECIVE_CMD) {
 		ENABLE_RECIVE_CMD = 0;
-		LED_BLUE_TOGGLE();
+		//LED_BLUE_TOGGLE();
 		EnviarDatos(ENABLE_MOTOR_CMD);
 		CreateCANMessage(ENABLE_MOTOR_CMD);
 	}
 	if (DISABLE_RECIVE_CMD) {
 		DISABLE_RECIVE_CMD = 0;
-		LED_RED_TOGGLE();
+		//LED_RED_TOGGLE();
 		EnviarDatos(DISABLE_MOTOR_CMD);
 		CreateCANMessage(DISABLE_MOTOR_CMD);
 	}
 	if (SPEED_MODE_REC_CMD) {
 		SPEED_MODE_REC_CMD = 0;
 		//LED_BLUE_TOGGLE();
-		//EnviarDatos(ENABLE_MOTOR_CMD);
+		EnviarDatos(SPEED_MODE_CMD);
 		CreateCANMessage(SPEED_MODE_CMD);
 	}
 	if (POSITION_MODE_REC_CMD) {
@@ -788,7 +782,7 @@ void ActionQT(){
 	if (TARGET_SPEED_REC_CMD) {
 		TARGET_SPEED_REC_CMD = 0;
 		LED_BLUE_TOGGLE();
-		//EnviarDatos(ENABLE_MOTOR_CMD);
+		EnviarDatos(SPEED_MOTOR_CMD);
 		CreateCANMessage(SPEED_MOTOR_CMD);
 	}
 	if (TARGET_POS_REC_CMD) {
