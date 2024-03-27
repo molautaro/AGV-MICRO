@@ -62,6 +62,9 @@
 #define ID_MAGNETIC_SENSOR FLEXCAN_ID_STD(0x123)
 #define ID_SEND_BATERIA FLEXCAN_ID_EXT(0x1806E5F4)//ID de msjs enviados desde placa a la bateria
 #define ID_REC_BATERIA FLEXCAN_ID_EXT(0x18FF50E5)//ID de msjs que recibe la placa desde la bateria
+#define ID_REC_MOTOR_SPEED FLEXCAN_ID_STD(0x587)
+#define ID_REC_MOTOR_DIRECTION FLEXCAN_ID_STD(0x581)
+
 
 //Comandos recibidos de QT
 #define SPEED_MODE_CMD 0xA3
@@ -74,7 +77,10 @@
 #define SPEED_MOTOR_CMD 0x06
 #define POS_MOTOR_CMD 0x07
 
-static uint8_t BATTERY_CHARGE_MESSAGE[] = {0x02, 0x48, 0x01, 0x2C, 0x00, 0x00, 0x00, 0x00};
+const uint8_t SPEED_MODE_MESSAGE[] = {0x07,0x2F,0x60,0x60,0x00,0x03,0x00,0x00,0x00};
+const uint8_t POS_MODE_MESSAGE[] = {0x01,0x2F,0x60,0x60,0x00,0x01,0x00,0x00,0x00};
+
+
 
 #define MSJ_BAT 0x01
 // para funcion ChargetoCANbuf(); whatFormat
@@ -102,7 +108,7 @@ void DecodeRFIDSensor();
 void CreateCANMessage(uint8_t msj);
 void ActionQT();
 void ChargeToCANBuf(uint8_t whatFormat, uint8_t payloadCAN[], uint32_t id);
-
+void workingmode();
 /*******************************************************************************
  * Variables
  ******************************************************************************/
@@ -140,6 +146,7 @@ volatile _tx ringTx, auxTX;
 uint16_t timeoutUSB = 200;
 uint16_t timeoutBAT = 100;
 uint8_t rxBuf[256], txBuf[256], auxbufRX[256],auxbufTX[256], auxlenght;
+uint8_t operationMode = 0;
 //uint8_t flag_carga_completa = 0;
 //uint8_t msj_CAN_BAT[8] = {0x02, 0x48, 0x01, 0x2C, 0x00, 0x00, 0x00, 0x00};
 //uint8_t msj_CAN_BAT2[8] = {0x00, 0x00, 0x00, 0x00, 0x0A, 0x0B, 0x0C, 0x0D};
@@ -161,11 +168,11 @@ volatile _sWork RFIDData[2],DestinationStation[2];
 #define w 	flag1.bit.b0 //
 #define RX_CAN_COMPLETE flag1.bit.b1
 #define BATT_FULL_CHARGE flag1.bit.b2
-#define WWWW 			flag1.bit.b3
-#define WWWWW 			flag1.bit.b4
-#define WWWWWW 			flag1.bit.b5
-#define WWWWWWW 		flag1.bit.b6
-#define WWWWWWWW 		flag1.bit.b7
+#define INIT_COMPLETE 			flag1.bit.b3
+#define SELECT_MANUAL 			flag1.bit.b4
+#define SELECT_AUTO 			flag1.bit.b5
+#define FIRST_INIT 		flag1.bit.b6
+#define READY_RECIVE 		flag1.bit.b7
 
 //PARA COMANDOS RECIBIDOS POR QT
 #define ALIVE_RECIVE_CMD 	 flagQT.bit.b0 //RECIBIO alive
@@ -179,7 +186,7 @@ volatile _sWork RFIDData[2],DestinationStation[2];
 
 #define TARGET_SPEED_REC_CMD   	flagQT_2.bit.b0
 #define TARGET_POS_REC_CMD     	flagQT_2.bit.b1
-#define AAAA   				flagQT_2.bit.b2
+#define AAA  				flagQT_2.bit.b2
 #define AAAAA   			flagQT_2.bit.b3
 #define AAAAAA   			flagQT_2.bit.b4
 #define AAAAAAA   			flagQT_2.bit.b5
@@ -223,7 +230,8 @@ int main(void) {
     LED_RED_INIT(1);
     LED_GREEN_INIT(1);
     LED_BLUE_INIT(1);
-
+    FIRST_INIT=0;
+    READY_RECIVE=1;
 
     //TX_CAN_BUF.frame->format = kFLEXCAN_FrameFormatStandard;
     txFrame.type = kFLEXCAN_FrameTypeData;
@@ -256,6 +264,7 @@ int main(void) {
     FLEXCAN_TransferReceiveNonBlocking(CAN0, &flexcanHandle, &RX_STD_CAN_BUF);
     //FLEXCAN_TransferReceiveNonBlocking(CAN0, &flexcanHandle, &RX_EXT_CAN_BUF);
 
+
 #endif
 
     PRINTF("Hello World\n");
@@ -271,6 +280,7 @@ int main(void) {
     	//LED_BLUE_ON();
     	//if(FLEXCAN_TransferReceiveNonBlocking(CAN0, &flexcanHandle, &RX_EXT_CAN_BUF) == kStatus_Success)
 
+    	workingmode();
 
     	if(!timeoutUSB){
     	    EnviarDatos(ALIVECMD);
@@ -303,6 +313,32 @@ int main(void) {
     return 0 ;
 }
 
+void workingmode(){
+	switch(operationMode){
+	case 0://MODO INICIALIZACION
+		if(!FIRST_INIT){
+			for (uint8_t var = 0; var < 9; ++var) {
+				auxbufRX[var]=SPEED_MODE_MESSAGE[var];
+			}
+			CreateCANMessage(SPEED_MODE_CMD);
+		}
+		else{
+			for (uint8_t var = 0; var < 9; ++var) {
+					auxbufRX[var]=POS_MODE_MESSAGE[var];
+				}
+				CreateCANMessage(POSITION_MODE_CMD);
+		}
+		//ChargeToCANBuf(DATA_STD, auxbufRX, MOTORS);
+		/* poner aqui lo que iria en el buffer*/
+	break;
+	case 1://MODO MANUAL
+
+	break;
+	case 2:
+	break;
+	}
+}
+
 void DecodeCANMessage(){
 	switch (RX_STD_CAN_BUF.frame->id) {
 		case ID_RFID_SENSOR: //cuando el mensaje que llego es del RFID
@@ -322,6 +358,19 @@ void DecodeCANMessage(){
 				//enviar msj a display para indicar que la bateria esta llena
 			}
 			break;
+		case ID_REC_MOTOR_SPEED:
+			READY_RECIVE = 1;
+			if(operationMode==0)
+				FIRST_INIT=1;
+		break;
+		case ID_REC_MOTOR_DIRECTION:
+			READY_RECIVE = 1;
+			if(operationMode==0){
+				//FIRST_INIT=0;
+				operationMode=1;
+			}
+
+		break;
 		default:
 			break;
 	}
@@ -362,7 +411,7 @@ static void flexcan_callback(CAN_Type *base, flexcan_handle_t *handle, status_t 
 		break;
 		/* Process FlexCAN Tx event. */
 	case kStatus_FLEXCAN_TxIdle:
-		LED_GREEN_TOGGLE();
+		//LED_GREEN_TOGGLE();
 		if (TX_MESSAGE_BUFFER_NUM == result)
 		{
 			//txComplete = 1;
@@ -544,7 +593,7 @@ void RecibirDatos(uint8_t head){
 				auxbufRX[var]=ringRx.buf[head++];
 			}
 		break;
-		case POS_MOTOR_CMD:
+		case POSITION_MODE_CMD:
 			POSITION_MODE_REC_CMD = 1;
 			for (uint8_t var = 0; var < 9; var++) {
 				auxbufRX[var]=ringRx.buf[head++];
@@ -562,10 +611,10 @@ void RecibirDatos(uint8_t head){
 				auxbufRX[var]=ringRx.buf[head++];
 			}
 		break;
-		case POSITION_MODE_CMD:
+		case POS_MOTOR_CMD:
 			TARGET_POS_REC_CMD = 1;
 			for (uint8_t var = 0; var < 9; var++) {
-				auxbufRX[0]=ringRx.buf[head++];
+				auxbufRX[var]=ringRx.buf[head++];
 			}
 		break;
 		case INVERTIR_1_CMD:
@@ -679,6 +728,7 @@ void EnviarDatos(uint8_t cmd){
 
 void CreateCANMessage(uint8_t msj){
 
+	if(READY_RECIVE){
 	switch(msj){
 	//case 0xFF:
 		//ChargeToCANBuf(DATA_EXT, BATTERY_CHARGE_MESSAGE, ID_SEND_BATERIA);
@@ -712,6 +762,8 @@ void CreateCANMessage(uint8_t msj){
 	break;
 	}
 	FLEXCAN_TransferSendNonBlocking(CAN0, &flexcanHandle, &TX_CAN_BUF);
+	READY_RECIVE=0;
+	}
 }
 
 void ChargeToCANBuf(uint8_t whatFormat, uint8_t payloadCAN[], uint32_t id){
@@ -754,60 +806,70 @@ void ActionQT(){
 		ALIVE_RECIVE_CMD = 0;
 	    //LED_GREEN_TOGGLE();
 	    EnviarDatos(TESTCMD);
+	    return;
 	}
 	if (ENABLE_RECIVE_CMD) {
 		ENABLE_RECIVE_CMD = 0;
 		//LED_BLUE_TOGGLE();
 		EnviarDatos(ENABLE_MOTOR_CMD);
 		CreateCANMessage(ENABLE_MOTOR_CMD);
+		return;
 	}
 	if (DISABLE_RECIVE_CMD) {
 		DISABLE_RECIVE_CMD = 0;
 		//LED_RED_TOGGLE();
 		EnviarDatos(DISABLE_MOTOR_CMD);
 		CreateCANMessage(DISABLE_MOTOR_CMD);
+		return;
 	}
 	if (SPEED_MODE_REC_CMD) {
 		SPEED_MODE_REC_CMD = 0;
-		//LED_BLUE_TOGGLE();
-		EnviarDatos(SPEED_MODE_CMD);
+		LED_GREEN_TOGGLE();
+		//EnviarDatos(SPEED_MODE_CMD);
 		CreateCANMessage(SPEED_MODE_CMD);
+		return;
 	}
 	if (POSITION_MODE_REC_CMD) {
 		POSITION_MODE_REC_CMD = 0;
-		//LED_BLUE_TOGGLE();
+		LED_BLUE_TOGGLE();
 		//EnviarDatos(ENABLE_MOTOR_CMD);
 		CreateCANMessage(POSITION_MODE_CMD);
+		return;
 	}
 	if (TARGET_SPEED_REC_CMD) {
 		TARGET_SPEED_REC_CMD = 0;
-		LED_BLUE_TOGGLE();
+		//LED_BLUE_TOGGLE();
 		EnviarDatos(SPEED_MOTOR_CMD);
 		CreateCANMessage(SPEED_MOTOR_CMD);
+		return;
 	}
 	if (TARGET_POS_REC_CMD) {
 		TARGET_POS_REC_CMD = 0;
 		//LED_BLUE_TOGGLE();
 		//EnviarDatos(ENABLE_MOTOR_CMD);
 		CreateCANMessage(POS_MOTOR_CMD);
+		return;
 	}
 	if (READY_POS_REC_CMD) {
 		READY_POS_REC_CMD = 0;
 		//LED_BLUE_TOGGLE();
 		//EnviarDatos(ENABLE_MOTOR_CMD);
 		CreateCANMessage(READY_POSI_CMD);
+		return;
 	}
 	if (INVERTIR1_RECIVE_CMD) {
 		INVERTIR1_RECIVE_CMD = 0;
 		//LED_BLUE_TOGGLE();
 		//EnviarDatos(ENABLE_MOTOR_CMD);
 		CreateCANMessage(INVERTIR_1_CMD);
+		return;
 	}
 	if (INVERTIR2_RECIVE_CMD) {
 		INVERTIR2_RECIVE_CMD = 0;
 		//LED_BLUE_TOGGLE();
 		//EnviarDatos(ENABLE_MOTOR_CMD);
 		CreateCANMessage(INVERTIR_2_CMD);
+		return;
 	}
 }
 
