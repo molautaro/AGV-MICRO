@@ -76,6 +76,7 @@
 #define READY_POSI_CMD 0x05
 #define SPEED_MOTOR_CMD 0x06
 #define POS_MOTOR_CMD 0x07
+#define MANUAL_CMD 0xD7
 
 const uint8_t SPEED_MODE_MESSAGE[] = {0x07,0x2F,0x60,0x60,0x00,0x03,0x00,0x00,0x00};
 const uint8_t POS_MODE_MESSAGE[] = {0x01,0x2F,0x60,0x60,0x00,0x01,0x00,0x00,0x00};
@@ -186,7 +187,7 @@ volatile _sWork RFIDData[2],DestinationStation[2];
 
 #define TARGET_SPEED_REC_CMD   	flagQT_2.bit.b0
 #define TARGET_POS_REC_CMD     	flagQT_2.bit.b1
-#define AAA  				flagQT_2.bit.b2
+#define MANUAL_CMD_REC  		flagQT_2.bit.b2
 #define AAAAA   			flagQT_2.bit.b3
 #define AAAAAA   			flagQT_2.bit.b4
 #define AAAAAAA   			flagQT_2.bit.b5
@@ -629,6 +630,12 @@ void RecibirDatos(uint8_t head){
 				auxbufRX[var]=ringRx.buf[head++];
 			}
 		break;
+		case MANUAL_CMD:
+			MANUAL_CMD_REC = 1;
+			for (uint8_t var = 0; var < 9; var++) {
+				auxbufRX[var]=ringRx.buf[head++];
+			}
+		break;
 	}
 }
 
@@ -760,6 +767,9 @@ void CreateCANMessage(uint8_t msj){
 	case INVERTIR_2_CMD:
 		ChargeToCANBuf(DATA_STD, auxbufRX, FLEXCAN_ID_STD(auxbufRX[0] + 0x600));
 	break;
+	case MANUAL_CMD:
+		ChargeToCANBuf(DATA_STD, auxbufRX, FLEXCAN_ID_STD(auxbufRX[0] + 0x600));
+	break;
 	}
 	FLEXCAN_TransferSendNonBlocking(CAN0, &flexcanHandle, &TX_CAN_BUF);
 	READY_RECIVE=0;
@@ -810,7 +820,7 @@ void ActionQT(){
 	}
 	if (ENABLE_RECIVE_CMD) {
 		ENABLE_RECIVE_CMD = 0;
-		//LED_BLUE_TOGGLE();
+		LED_BLUE_TOGGLE();
 		EnviarDatos(ENABLE_MOTOR_CMD);
 		CreateCANMessage(ENABLE_MOTOR_CMD);
 		return;
@@ -869,6 +879,13 @@ void ActionQT(){
 		//LED_BLUE_TOGGLE();
 		//EnviarDatos(ENABLE_MOTOR_CMD);
 		CreateCANMessage(INVERTIR_2_CMD);
+		return;
+	}
+	if (MANUAL_CMD_REC) {
+		MANUAL_CMD_REC = 0;
+		LED_BLUE_TOGGLE();
+		//EnviarDatos(ENABLE_MOTOR_CMD);
+		CreateCANMessage(MANUAL_CMD);
 		return;
 	}
 }
