@@ -11,9 +11,9 @@
  **********************************************************************************************************************/
 #include "fsl_common.h"
 #include "fsl_sysmpu.h"
-#include "fsl_pit.h"
 #include "fsl_flexcan.h"
 #include "fsl_clock.h"
+#include "fsl_pit.h"
 #include "usb_device_composite.h"
 
 #if defined(__cplusplus)
@@ -26,6 +26,10 @@ extern "C" {
 /* Definitions for BOARD_InitPeripherals functional group */
 /* Definition of peripheral ID */
 #define SYSMPU_PERIPHERAL SYSMPU
+/* Definition of peripheral ID */
+#define CAN0_PERIPHERAL CAN0
+/* Definition of the clock source frequency */
+#define CAN0_CLOCK_SOURCE 60000000UL
 /* BOARD_InitPeripherals defines for PIT */
 /* Definition of peripheral ID. */
 #define PIT_PERIPHERAL PIT
@@ -47,20 +51,16 @@ extern "C" {
 #define PIT_CHANNEL_0_IRQN PIT0_IRQn
 /* PIT interrupt handler identifier. */
 #define PIT_CHANNEL_0_IRQHANDLER PIT0_IRQHandler
-/* Definition of peripheral ID */
-#define CAN0_PERIPHERAL CAN0
-/* Definition of the clock source frequency */
-#define CAN0_CLOCK_SOURCE 60000000UL
 
 /***********************************************************************************************************************
  * Global variables
  **********************************************************************************************************************/
-extern const pit_config_t PIT_config;
 extern const flexcan_config_t CAN0_config;
 /* Message buffer 0 configuration structure */
 extern const flexcan_rx_mb_config_t CAN0_rx_mb_config_0;
 /* Message buffer 1 configuration structure */
 extern const flexcan_rx_mb_config_t CAN0_rx_mb_config_1;
+extern const pit_config_t PIT_config;
 
 /***********************************************************************************************************************
  * Initialization functions

@@ -15,12 +15,10 @@
 
 #include "usb_device_composite.h"
 
-#include "Util.h"
-
 /*******************************************************************************
  * Definitions
  ******************************************************************************/
-
+#include "Util.h"
 /* Outgoing notification buffer number */
 #define USB_CIC_VCOM_IN_ENDPOINT (1)
 /* Outgoing data buffer number */
@@ -32,7 +30,7 @@
 /* Incoming data buffer index */
 #define USB_DIC_VCOM_OUT_ENDPOINT_INDEX (1)
 /* Data packet size for High Speed */
-#define HS_DIC_VCOM_OUT_PACKET_SIZE (512)
+#define HS_DIC_VCOM_OUT_PACKET_SIZE (0)
 /* Data packet size for Full Speed */
 #define FS_DIC_VCOM_OUT_PACKET_SIZE (64)
 
@@ -170,28 +168,58 @@ void USB_DeviceInterface0CicVcomTask(void)
             for (i = 0; i < s_recvSize; i++)
             {
                 //s_currSendBuf[s_sendSize++] = s_currRecvBuf[i];
-            	ringRx.buf[ringRx.iW++] = s_currRecvBuf[i];
+            	s_sendSize++;
+                ringRx.buf[ringRx.iW++] = s_currRecvBuf[i];
             }
             s_recvSize = 0;
         }
 
         if (ringTx.iW != ringTx.iR) //Parte transmision
-        {
-            uint32_t size;
+		{
+			uint8_t size;
 
-            if(ringTx.iW > ringTx.iR)
-            	size = ringTx.iW - ringTx.iR;
-            else
-            	size = 256 - ringTx.iR;
+			if(ringTx.iW > ringTx.iR)
+				size = ringTx.iW - ringTx.iR;
+			else
+				size = 256 - ringTx.iR;
 
-            error = USB_DeviceCdcAcmSend(s_UsbInterface0CicVcom.cdcAcmHandle, USB_DIC_VCOM_IN_ENDPOINT, &ringTx.buf[ringTx.iR], size);
+			error = USB_DeviceCdcAcmSend(s_UsbInterface0CicVcom.cdcAcmHandle, USB_DIC_VCOM_IN_ENDPOINT, &ringTx.buf[ringTx.iR], size);
 
-            if (error != kStatus_USB_Success)
-            {
-                /* Failure to send Data Handling code here */
-            	ringTx.iR +=size;
-            }
+			if (error == kStatus_USB_Success)
+			{
+				uint8_t errortest;
+				errortest =1;
+				ringTx.iR += size;
+				/* Failure to send Data Handling code here */
+			}
+
+		}
+        else{
+        	if(s_sendSize > 0 && s_sendSize < 8){
+        		error = USB_DeviceCdcAcmSend(s_UsbInterface0CicVcom.cdcAcmHandle, USB_DIC_VCOM_IN_ENDPOINT, 0, 0);
+				if (error != kStatus_USB_Success)
+				{
+					/* Failure to send Data Handling code here */
+				}
+        	}
+
         }
+        s_sendSize = 0;
+
+
+
+//        if (s_sendSize)
+//        {
+//            uint32_t size = s_sendSize;
+//            s_sendSize = 0;
+//
+//            error = USB_DeviceCdcAcmSend(s_UsbInterface0CicVcom.cdcAcmHandle, USB_DIC_VCOM_IN_ENDPOINT, s_currSendBuf, size);
+//
+//            if (error != kStatus_USB_Success)
+//            {
+//                /* Failure to send Data Handling code here */
+//            }
+//        }
 #if defined(FSL_FEATURE_USB_KHCI_KEEP_ALIVE_ENABLED) && (FSL_FEATURE_USB_KHCI_KEEP_ALIVE_ENABLED > 0U) && \
     defined(USB_DEVICE_CONFIG_KEEP_ALIVE_MODE) && (USB_DEVICE_CONFIG_KEEP_ALIVE_MODE > 0U) &&             \
     defined(FSL_FEATURE_USB_KHCI_USB_RAM) && (FSL_FEATURE_USB_KHCI_USB_RAM > 0U)
@@ -223,7 +251,6 @@ void USB_DeviceInterface0CicVcomTask(void)
 #endif
     }
 }
-
 
 /*!
 * @brief Function that processes class specific events.
@@ -447,29 +474,18 @@ usb_status_t USB_DeviceInterface0CicVcomCallback(class_handle_t handle, uint32_t
             {
                 /* To do: CARRIER_DEACTIVATED */
             }
-            if (acmInfo->dteStatus & USB_DEVICE_CDC_CONTROL_SIG_BITMAP_DTE_PRESENCE)
+            
+			if (1 == s_UsbDeviceComposite->attach)
             {
-                /* DTE_ACTIVATED */
-                if (1 == s_UsbDeviceComposite->attach)
-                {
-                    s_UsbInterface0CicVcom.startTransactions = 1;
+                s_UsbInterface0CicVcom.startTransactions = 1;
 #if defined(FSL_FEATURE_USB_KHCI_KEEP_ALIVE_ENABLED) && (FSL_FEATURE_USB_KHCI_KEEP_ALIVE_ENABLED > 0U) && \
     defined(USB_DEVICE_CONFIG_KEEP_ALIVE_MODE) && (USB_DEVICE_CONFIG_KEEP_ALIVE_MODE > 0U) &&             \
     defined(FSL_FEATURE_USB_KHCI_USB_RAM) && (FSL_FEATURE_USB_KHCI_USB_RAM > 0U)
-                    s_waitForDataReceive = 1;
-                    USB0->INTEN &= ~USB_INTEN_SOFTOKEN_MASK;
-                    s_comOpen = 1;
-                    usb_echo("USB_APP_CDC_DTE_ACTIVATED\r\n");
+                s_waitForDataReceive = 1;
+                USB0->INTEN &= ~USB_INTEN_SOFTOKEN_MASK;
+                s_comOpen = 1;
+                usb_echo("USB_APP_CDC_DTE_ACTIVATED\r\n");
 #endif
-                }
-            }
-            else
-            {
-                /* DTE_DEACTIVATED */
-                if (1 == s_UsbDeviceComposite->attach)
-                {
-                    s_UsbInterface0CicVcom.startTransactions = 0;
-                }
             }
             error = kStatus_USB_Success;
         }

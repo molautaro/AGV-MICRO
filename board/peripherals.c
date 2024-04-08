@@ -14,7 +14,7 @@ processor_version: 12.0.0
 board: FRDM-K64F
 functionalGroups:
 - name: BOARD_InitPeripherals
-  UUID: 74aefb45-7042-46af-9a8d-1f3b37f03c34
+  UUID: 06b3db46-0fac-4805-9bcd-9b01fffb48b3
   called_from_default_init: true
   selectedCore: core0
  * BE CAREFUL MODIFYING THIS COMMENT - IT IS YAML SETTINGS FOR TOOLS **********/
@@ -102,58 +102,6 @@ static void NVIC_init(void) {
 } */
 
 /***********************************************************************************************************************
- * PIT initialization code
- **********************************************************************************************************************/
-/* clang-format off */
-/* TEXT BELOW IS USED AS SETTING FOR TOOLS *************************************
-instance:
-- name: 'PIT'
-- type: 'pit'
-- mode: 'LPTMR_GENERAL'
-- custom_name_enabled: 'false'
-- type_id: 'pit_ab54f91356454adb874dafbb69e655fd'
-- functional_group: 'BOARD_InitPeripherals'
-- peripheral: 'PIT'
-- config_sets:
-  - fsl_pit:
-    - enableRunInDebug: 'false'
-    - timingConfig:
-      - clockSource: 'BusInterfaceClock'
-      - clockSourceFreq: 'BOARD_BootClockRUN'
-    - channels:
-      - 0:
-        - channel_id: 'CHANNEL_0'
-        - channelNumber: '0'
-        - enableChain: 'false'
-        - timerPeriod: '10ms'
-        - startTimer: 'true'
-        - enableInterrupt: 'true'
-        - interrupt:
-          - IRQn: 'PIT0_IRQn'
-          - enable_interrrupt: 'enabled'
-          - enable_priority: 'false'
-          - priority: '0'
-          - enable_custom_name: 'false'
- * BE CAREFUL MODIFYING THIS COMMENT - IT IS YAML SETTINGS FOR TOOLS **********/
-/* clang-format on */
-const pit_config_t PIT_config = {
-  .enableRunInDebug = false
-};
-
-static void PIT_init(void) {
-  /* Initialize the PIT. */
-  PIT_Init(PIT_PERIPHERAL, &PIT_config);
-  /* Set channel 0 period to 10 ms (600000 ticks). */
-  PIT_SetTimerPeriod(PIT_PERIPHERAL, PIT_CHANNEL_0, PIT_CHANNEL_0_TICKS);
-  /* Enable interrupts from channel 0. */
-  PIT_EnableInterrupts(PIT_PERIPHERAL, PIT_CHANNEL_0, kPIT_TimerInterruptEnable);
-  /* Enable interrupt PIT_CHANNEL_0_IRQN request in the NVIC */
-  EnableIRQ(PIT_CHANNEL_0_IRQN);
-  /* Start channel 0. */
-  PIT_StartTimer(PIT_PERIPHERAL, PIT_CHANNEL_0);
-}
-
-/***********************************************************************************************************************
  * CAN0 initialization code
  **********************************************************************************************************************/
 /* clang-format off */
@@ -222,7 +170,7 @@ instance:
       - enableLoopBack: 'false'
       - enableTimerSync: 'true'
       - enableSelfWakeup: 'false'
-      - enableIndividMask: 'false'
+      - enableIndividMask: 'true'
       - disableSelfReception: 'false'
       - enableListenOnlyMode: 'false'
       - enableSupervisorMode: 'false'
@@ -247,11 +195,11 @@ instance:
           - format: 'kFLEXCAN_FrameFormatStandard'
           - type: 'kFLEXCAN_FrameTypeData'
       - 1:
-        - mbID: '3'
-        - mbType: 'mbTx'
+        - mbID: '1'
+        - mbType: 'mbRx'
         - rxMb:
           - id: '0'
-          - format: 'kFLEXCAN_FrameFormatStandard'
+          - format: 'kFLEXCAN_FrameFormatExtend'
           - type: 'kFLEXCAN_FrameTypeData'
       - 2:
         - mbID: '2'
@@ -261,11 +209,11 @@ instance:
           - format: 'kFLEXCAN_FrameFormatStandard'
           - type: 'kFLEXCAN_FrameTypeData'
       - 3:
-        - mbID: '1'
-        - mbType: 'mbRx'
+        - mbID: '3'
+        - mbType: 'mbTx'
         - rxMb:
           - id: '0'
-          - format: 'kFLEXCAN_FrameFormatExtend'
+          - format: 'kFLEXCAN_FrameFormatStandard'
           - type: 'kFLEXCAN_FrameTypeData'
  * BE CAREFUL MODIFYING THIS COMMENT - IT IS YAML SETTINGS FOR TOOLS **********/
 /* clang-format on */
@@ -277,7 +225,7 @@ const flexcan_config_t CAN0_config = {
   .enableLoopBack = false,
   .enableTimerSync = true,
   .enableSelfWakeup = false,
-  .enableIndividMask = false,
+  .enableIndividMask = true,
   .disableSelfReception = false,
   .enableListenOnlyMode = false,
   .enableSupervisorMode = false,
@@ -306,12 +254,64 @@ static void CAN0_init(void) {
   FLEXCAN_Init(CAN0_PERIPHERAL, &CAN0_config, CAN0_CLOCK_SOURCE);
   /* Message buffer 0 initialization */
   FLEXCAN_SetRxMbConfig(CAN0_PERIPHERAL, 0, &CAN0_rx_mb_config_0, true);
-  /* Message buffer 3 initialization */
-  FLEXCAN_SetTxMbConfig(CAN0_PERIPHERAL, 3, true);
-  /* Message buffer 2 initialization */
-  FLEXCAN_SetTxMbConfig(CAN0_PERIPHERAL, 2, true);
   /* Message buffer 1 initialization */
   FLEXCAN_SetRxMbConfig(CAN0_PERIPHERAL, 1, &CAN0_rx_mb_config_1, true);
+  /* Message buffer 2 initialization */
+  FLEXCAN_SetTxMbConfig(CAN0_PERIPHERAL, 2, true);
+  /* Message buffer 3 initialization */
+  FLEXCAN_SetTxMbConfig(CAN0_PERIPHERAL, 3, true);
+}
+
+/***********************************************************************************************************************
+ * PIT initialization code
+ **********************************************************************************************************************/
+/* clang-format off */
+/* TEXT BELOW IS USED AS SETTING FOR TOOLS *************************************
+instance:
+- name: 'PIT'
+- type: 'pit'
+- mode: 'LPTMR_GENERAL'
+- custom_name_enabled: 'false'
+- type_id: 'pit_ab54f91356454adb874dafbb69e655fd'
+- functional_group: 'BOARD_InitPeripherals'
+- peripheral: 'PIT'
+- config_sets:
+  - fsl_pit:
+    - enableRunInDebug: 'false'
+    - timingConfig:
+      - clockSource: 'BusInterfaceClock'
+      - clockSourceFreq: 'BOARD_BootClockRUN'
+    - channels:
+      - 0:
+        - channel_id: 'CHANNEL_0'
+        - channelNumber: '0'
+        - enableChain: 'false'
+        - timerPeriod: '10ms'
+        - startTimer: 'true'
+        - enableInterrupt: 'true'
+        - interrupt:
+          - IRQn: 'PIT0_IRQn'
+          - enable_interrrupt: 'enabled'
+          - enable_priority: 'false'
+          - priority: '0'
+          - enable_custom_name: 'false'
+ * BE CAREFUL MODIFYING THIS COMMENT - IT IS YAML SETTINGS FOR TOOLS **********/
+/* clang-format on */
+const pit_config_t PIT_config = {
+  .enableRunInDebug = false
+};
+
+static void PIT_init(void) {
+  /* Initialize the PIT. */
+  PIT_Init(PIT_PERIPHERAL, &PIT_config);
+  /* Set channel 0 period to 10 ms (600000 ticks). */
+  PIT_SetTimerPeriod(PIT_PERIPHERAL, PIT_CHANNEL_0, PIT_CHANNEL_0_TICKS);
+  /* Enable interrupts from channel 0. */
+  PIT_EnableInterrupts(PIT_PERIPHERAL, PIT_CHANNEL_0, kPIT_TimerInterruptEnable);
+  /* Enable interrupt PIT_CHANNEL_0_IRQN request in the NVIC */
+  EnableIRQ(PIT_CHANNEL_0_IRQN);
+  /* Start channel 0. */
+  PIT_StartTimer(PIT_PERIPHERAL, PIT_CHANNEL_0);
 }
 
 /***********************************************************************************************************************
@@ -353,12 +353,11 @@ instance:
                   - transfer_type: 'kInterrupt'
                   - synchronization: 'kNoSynchronization'
                   - usage: 'kData'
-                  - max_packet_size_fs: 'k16'
+                  - max_packet_size_fs: 'k64'
                   - polling_interval_fs: '8'
                   - bRefresh: '0'
                   - bSynchAddress: 'NoSynchronization'
           - data_interface_count: '1'
-          - quick_selection: 'QS_INTERFACE_CIC_VCOM'
       - 1:
         - interface_class: 'kClassDic'
         - setting_dic:
@@ -389,7 +388,6 @@ instance:
                   - bRefresh: '0'
                   - bSynchAddress: 'NoSynchronization'
           - quick_selection: 'QS_INTERFACE_DIC_VCOM'
-    - quick_selection: 'QS_DEVICE_CDC_VCOM'
   - commonSettings:
     - mpu_init:
       - mpu_init_component: 'SYSMPU'
@@ -410,8 +408,8 @@ void BOARD_InitPeripherals(void)
   SYSMPU_Enable(SYSMPU_PERIPHERAL, 0);
 
   /* Initialize components */
-  PIT_init();
   CAN0_init();
+  PIT_init();
   USB0_init();
 }
 

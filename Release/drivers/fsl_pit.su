@@ -1,2 +1,0 @@
-../drivers/fsl_pit.c:68:6:PIT_Init	8	static
-../drivers/fsl_pit.c:106:6:PIT_Deinit	0	static

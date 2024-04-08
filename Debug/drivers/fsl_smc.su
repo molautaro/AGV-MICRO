@@ -1,5 +1,5 @@
-../drivers/fsl_common_arm.h:568:24:DisableGlobalIRQ	16	static
-../drivers/fsl_common_arm.h:595:20:EnableGlobalIRQ	24	static
+../drivers/fsl_common_arm.h:579:24:DisableGlobalIRQ	16	static
+../drivers/fsl_common_arm.h:606:20:EnableGlobalIRQ	24	static
 ../drivers/fsl_smc.c:74:13:SMC_EnterStopRamFunc	16	static
 ../drivers/fsl_smc.c:105:6:SMC_PreEnterStopModes	8	static
 ../drivers/fsl_smc.c:117:6:SMC_PostExitStopModes	8	static

@@ -1,9 +1,9 @@
-C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\CMSIS/core_cm4.h:1679:22:__NVIC_EnableIRQ	16	static
+C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\usb_config\CMSIS/core_cm4.h:1679:22:__NVIC_EnableIRQ	16	static
 ../drivers/fsl_clock.h:668:20:CLOCK_EnableClock	24	static
 ../drivers/fsl_clock.h:679:20:CLOCK_DisableClock	24	static
-../drivers/fsl_common_arm.h:488:24:EnableIRQ	24	static
-../drivers/fsl_common_arm.h:568:24:DisableGlobalIRQ	16	static
-../drivers/fsl_common_arm.h:595:20:EnableGlobalIRQ	24	static
+../drivers/fsl_common_arm.h:499:24:EnableIRQ	24	static
+../drivers/fsl_common_arm.h:579:24:DisableGlobalIRQ	16	static
+../drivers/fsl_common_arm.h:606:20:EnableGlobalIRQ	24	static
 ../drivers/fsl_uart.h:396:20:UART_Set9thTransmitBit	16	static
 ../drivers/fsl_uart.h:406:20:UART_Clear9thTransmitBit	16	static
 ../drivers/fsl_uart.h:653:20:UART_WriteByte	16	static
