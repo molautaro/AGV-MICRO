@@ -284,7 +284,7 @@ void workingmode(){
 			for (uint8_t var = 0; var < 9; ++var) {
 					auxbufRX[var]=POS_MODE_MESSAGE[var];
 				}
-				CreateCANMessage(POSITION_MODE_CMD);
+				//CreateCANMessage(POSITION_MODE_CMD);
 		}
 		//ChargeToCANBuf(DATA_STD, auxbufRX, MOTORS);
 		/* poner aqui lo que iria en el buffer*/
@@ -318,8 +318,12 @@ void DecodeCANMessage(){
 			break;
 		case ID_REC_MOTOR_SPEED:
 			READY_RECIVE = 1;
-			if(operationMode==0)
+			LED_GREEN_TOGGLE();
+			if(operationMode==0){
 				FIRST_INIT=1;
+				operationMode=1;
+
+			}
 		break;
 		case ID_REC_MOTOR_DIRECTION:
 			READY_RECIVE = 1;

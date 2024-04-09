@@ -917,8 +917,8 @@
             <file path="source/generated/usb_device_config.h" update_enabled="true"/>
             <file path="source/generated/usb_device_descriptor.c" update_enabled="true"/>
             <file path="source/generated/usb_device_descriptor.h" update_enabled="true"/>
-            <file path="source/usb_device_interface_0_cic_vcom.c" update_enabled="true"/>
-            <file path="source/usb_device_interface_0_cic_vcom.h" update_enabled="true"/>
+            <file path="source/usb_device_interface_0_cic_vcom.c" update_enabled="false"/>
+            <file path="source/usb_device_interface_0_cic_vcom.h" update_enabled="false"/>
          </generated_project_files>
          <peripherals_profile>
             <processor_version>12.0.0</processor_version>
@@ -1144,7 +1144,7 @@
                            <setting name="enableLoopBack" value="false"/>
                            <setting name="enableTimerSync" value="true"/>
                            <setting name="enableSelfWakeup" value="false"/>
-                           <setting name="enableIndividMask" value="true"/>
+                           <setting name="enableIndividMask" value="false"/>
                            <setting name="disableSelfReception" value="false"/>
                            <setting name="enableListenOnlyMode" value="false"/>
                            <setting name="enableSupervisorMode" value="false"/>

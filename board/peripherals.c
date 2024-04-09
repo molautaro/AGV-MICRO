@@ -170,7 +170,7 @@ instance:
       - enableLoopBack: 'false'
       - enableTimerSync: 'true'
       - enableSelfWakeup: 'false'
-      - enableIndividMask: 'true'
+      - enableIndividMask: 'false'
       - disableSelfReception: 'false'
       - enableListenOnlyMode: 'false'
       - enableSupervisorMode: 'false'
@@ -225,7 +225,7 @@ const flexcan_config_t CAN0_config = {
   .enableLoopBack = false,
   .enableTimerSync = true,
   .enableSelfWakeup = false,
-  .enableIndividMask = true,
+  .enableIndividMask = false,
   .disableSelfReception = false,
   .enableListenOnlyMode = false,
   .enableSupervisorMode = false,
