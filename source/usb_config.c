@@ -46,6 +46,7 @@
 #define ACC_SPEED_CMD 0xA6
 #define DEC_SPEED_CMD 0xA7
 
+const uint8_t CARGA_BAT_MESSAGE[] = {0x02, 0x48, 0x01, 0x2C, 0x00, 0x00, 0x00, 0x00};
 const uint8_t SPEED_MODE_MESSAGE[] = {0x07,0x2F,0x60,0x60,0x00,0x03,0x00,0x00,0x00};
 const uint8_t POS_MODE_MESSAGE[] = {0x01,0x2F,0x60,0x60,0x00,0x01,0x00,0x00,0x00};
 const uint8_t ENABLE_MVEL[] = {0x07,0x2B,0x40,0x60,0x00,0x0F,0x00,0x00,0x00};
@@ -134,7 +135,7 @@ volatile _tx ringTx, auxTX;
 uint16_t timeoutUSB = 200;
 uint16_t timeoutBAT = 100;
 uint8_t rxBuf[256], txBuf[256], auxbufRX[256],auxbufTX[256], auxlenght;
-uint8_t operationMode = 0, init_comp = 0;
+uint8_t operationMode = 0, init_comp = 0, timeoutINIT = 0;
 //uint8_t flag_carga_completa = 0;
 //uint8_t msj_CAN_BAT[8] = {0x02, 0x48, 0x01, 0x2C, 0x00, 0x00, 0x00, 0x00};
 //uint8_t msj_CAN_BAT2[8] = {0x00, 0x00, 0x00, 0x00, 0x0A, 0x0B, 0x0C, 0x0D};
@@ -292,23 +293,50 @@ int main(void) {
 }
 
 void workingmode(){
+	LED_BLUE_TOGGLE();
 	switch(operationMode){
 	case 0://MODO INICIALIZACION
-		if(!FIRST_INIT){
-					for (uint8_t var = 0; var < 9; ++var) {
-						auxbufRX[var]=SPEED_MODE_MESSAGE[var];
-					}
-					CreateCANMessage(SPEED_MODE_CMD);
-		}
-		else{
-			for (uint8_t var = 0; var < 9; ++var) {
-					auxbufRX[var]=POS_MODE_MESSAGE[var];
+		//init_status = 0;
+		if(!timeoutINIT || READY_RECIVE){
+			switch(init_comp){
+			case 0:
+				LED_RED_TOGGLE();
+				for (uint8_t var = 0; var < 9; var++) {
+					auxbufRX[var]=SPEED_MODE_MESSAGE[var];
 				}
-				//CreateCANMessage(POSITION_MODE_CMD);
+				CreateCANMessage(SPEED_MODE_CMD);
+			break;
+			case 1:
+				LED_RED_TOGGLE();
+				for (uint8_t var = 0; var < 9; var++) {
+					auxbufRX[var]=ACC_SPEED_10[var];
+				}
+				CreateCANMessage(ACC_SPEED_CMD);
+			break;
+			case 2:
+				for (uint8_t var = 0; var < 9; var++) {
+					auxbufRX[var]=DESA_SPEED_10[var];
+				}
+				CreateCANMessage(DEC_SPEED_CMD);
+			break;
+			}
+			timeoutINIT = 50;
 		}
-		if(){
-
-		}
+//		if(!FIRST_INIT){
+//					for (uint8_t var = 0; var < 9; ++var) {
+//						auxbufRX[var]=SPEED_MODE_MESSAGE[var];
+//					}
+//					CreateCANMessage(SPEED_MODE_CMD);
+//		}
+//		else{
+//			for (uint8_t var = 0; var < 9; ++var) {
+//					auxbufRX[var]=POS_MODE_MESSAGE[var];
+//				}
+//				//CreateCANMessage(POSITION_MODE_CMD);
+//		}
+//		if(){
+//
+//		}
 		//ChargeToCANBuf(DATA_STD, auxbufRX, MOTORS);
 		/* poner aqui lo que iria en el buffer*/
 	break;
@@ -342,9 +370,10 @@ void DecodeCANMessage(){
 		case ID_REC_MOTOR_SPEED:
 			READY_RECIVE = 1;
 			LED_GREEN_TOGGLE();
-			if(operationMode==0 && init_comp == 3){
-				FIRST_INIT=1;
-				operationMode=1;
+			if(operationMode==0){
+				init_comp++;
+				if (init_comp == 3)
+					operationMode = 1;
 			}
 		break;
 		case ID_REC_MOTOR_DIRECTION:
@@ -880,6 +909,10 @@ void PIT_CHANNEL_0_IRQHANDLER(void) {
 	  timeoutBAT--;
   }
 
+
+  if(timeoutINIT){
+	  timeoutINIT--;
+   }
 
   if(ringRx.timeout){
 	  ringRx.timeout--;
