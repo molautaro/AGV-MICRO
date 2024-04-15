@@ -1,18 +1,20 @@
-C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\drivers/fsl_gpio.h:162:20:GPIO_PinWrite	24	static
-C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\drivers/fsl_gpio.h:221:20:GPIO_PortToggle	16	static
-C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\drivers/fsl_pit.h:207:24:PIT_GetStatusFlags	16	static
-C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\drivers/fsl_pit.h:220:20:PIT_ClearStatusFlags	24	static
-../source/usb_config.c:195:5:main	8	static
-../source/usb_config.c:295:6:workingmode	16	static
-../source/usb_config.c:351:6:DecodeCANMessage	8	static
-../source/usb_config.c:392:13:flexcan_callback	24	static
-../source/usb_config.c:447:6:DecodeRFIDSensor	8	static
-../source/usb_config.c:465:6:DecodeMagneticSensor	4	static
-../source/usb_config.c:487:6:Decode	8	static
-../source/usb_config.c:580:6:RecibirDatos	32	static
-../source/usb_config.c:652:6:UpdateChecksum	4	static
-../source/usb_config.c:677:6:EnviarDatos	24	static
-../source/usb_config.c:745:6:CreateCANMessage	16	static
-../source/usb_config.c:788:6:ChargeToCANBuf	24	static
-../source/usb_config.c:823:6:ActionQT	8	static
-../source/usb_config.c:896:6:PIT0_IRQHandler	16	static
+C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb (2)\usb_config\drivers/fsl_gpio.h:162:20:GPIO_PinWrite	24	static
+C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb (2)\usb_config\drivers/fsl_gpio.h:221:20:GPIO_PortToggle	16	static
+C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb (2)\usb_config\drivers/fsl_pit.h:207:24:PIT_GetStatusFlags	16	static
+C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb (2)\usb_config\drivers/fsl_pit.h:220:20:PIT_ClearStatusFlags	24	static
+../source/usb_config.c:198:5:main	8	static
+../source/usb_config.c:302:6:workingmode	16	static
+../source/usb_config.c:374:6:DecodeCANMessage	8	static
+../source/usb_config.c:415:13:flexcan_callback	24	static
+../source/usb_config.c:470:6:DecodeRFIDSensor	8	static
+../source/usb_config.c:488:6:DecodeMagneticSensor	4	static
+../source/usb_config.c:510:6:Decode	8	static
+../source/usb_config.c:603:6:RecibirDatos	32	static
+../source/usb_config.c:684:6:UpdateChecksum	4	static
+../source/usb_config.c:709:6:EnviarDatos	24	static
+../source/usb_config.c:777:6:CreateCANMessage	16	static
+../source/usb_config.c:820:6:ChargeToCANBuf	24	static
+../source/usb_config.c:855:6:ActionQT	8	static
+../source/usb_config.c:927:10:speedConvertionRPMtoDEC	24	static
+../source/usb_config.c:933:7:speedControl	24	static
+../source/usb_config.c:947:6:PIT0_IRQHandler	16	static

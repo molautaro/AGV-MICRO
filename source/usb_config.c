@@ -7,7 +7,7 @@
 #include "fsl_debug_console.h"
 #include "Util.h"
 #include "usb_device_interface_0_cic_vcom.h"
-
+#include <math.h>
 
 
 /* insert other include files here. */
@@ -97,6 +97,8 @@ void CreateCANMessage(uint8_t msj);
 void ActionQT();
 void ChargeToCANBuf(uint8_t whatFormat, uint8_t payloadCAN[], uint32_t id);
 void workingmode();
+float speedControl(float d, int Vmax);
+uint32_t speedConvertionRPMtoDEC(float rpmSpeed);
 /*******************************************************************************
  * Variables
  ******************************************************************************/
@@ -142,7 +144,8 @@ uint8_t operationMode = 0, init_comp = 0, timeoutINIT = 0;
 uint16_t magneticSensorBitStatus;
 uint16_t volt_bateria = 0;
 volatile _sFlag flag1, SensorsStatus, flagQT, flagQT_2;
-volatile _sWork RFIDData[2],DestinationStation[2];
+volatile _sWork RFIDData[2],DestinationStation[2],Distance_Sensor_SIMULATION;
+volatile _sWork SpeedMotorCalcRPM, SpeedMotorCalcRPMAUX,SpeedMotorCalcDEC;
 
 #define SENSORSTATUS_0 	SensorsStatus.bit.b0 //Estado Sensor 0
 #define SENSORSTATUS_1 	SensorsStatus.bit.b1 //Estado Sensor 1
@@ -262,6 +265,10 @@ int main(void) {
     /* Enter an infinite loop, just incrementing a counter. */
     DestinationStation[0].u8[0]= 0x45;
 	DestinationStation[0].u8[1]= 0x31;
+	Distance_Sensor_SIMULATION.f = 2.0;
+	SpeedMotorCalcRPM.f = 0.0;
+	SpeedMotorCalcRPMAUX.f = 0.0;
+	//operationMode = 1;
     while(1) {
     	USB_DeviceTasks();
     	//USB_DeviceCdcAcmSend(handle, ep, buffer, length)
@@ -293,7 +300,7 @@ int main(void) {
 }
 
 void workingmode(){
-	LED_BLUE_TOGGLE();
+	//LED_BLUE_TOGGLE();
 	switch(operationMode){
 	case 0://MODO INICIALIZACION
 		//init_status = 0;
@@ -341,7 +348,23 @@ void workingmode(){
 		/* poner aqui lo que iria en el buffer*/
 	break;
 	case 1://MODO MANUAL
-
+		SpeedMotorCalcRPMAUX.f = speedControl(Distance_Sensor_SIMULATION.f, 3000);
+		if(fabs(SpeedMotorCalcRPM.f-SpeedMotorCalcRPMAUX.f) >= 50){
+			//cambiar velocidad porque el cambio es de mas de 50rpm
+			SpeedMotorCalcRPM.f = SpeedMotorCalcRPMAUX.f;
+			SpeedMotorCalcDEC.u32 = speedConvertionRPMtoDEC(SpeedMotorCalcRPM.f);
+			auxbufRX[0] = 0x07; //id motor
+			auxbufRX[1] = 0x23;
+			auxbufRX[2] = 0xFF;
+			auxbufRX[3] = 0x60;
+			auxbufRX[4] = 0x00;
+			auxbufRX[5] = SpeedMotorCalcDEC.u8[0];
+			auxbufRX[6] = SpeedMotorCalcDEC.u8[1];
+			auxbufRX[7] = SpeedMotorCalcDEC.u8[2];
+			auxbufRX[8] = SpeedMotorCalcDEC.u8[3];
+			CreateCANMessage(SPEED_MOTOR_CMD);
+			//READY_RECIVE=1;
+		}
 	break;
 	case 2:
 	break;
@@ -640,6 +663,15 @@ void RecibirDatos(uint8_t head){
 				auxbufRX[var]=ringRx.buf[head++];
 			}
 		break;
+		case 0xAF:
+			for (uint8_t var = 0; var < 9; var++) {
+				auxbufRX[var]=ringRx.buf[head++];
+			}
+			Distance_Sensor_SIMULATION.u8[0]=auxbufRX[5];
+			Distance_Sensor_SIMULATION.u8[1]=auxbufRX[6];
+			Distance_Sensor_SIMULATION.u8[2]=auxbufRX[7];
+			Distance_Sensor_SIMULATION.u8[3]=auxbufRX[8];
+		break;
 		default:
 			//LED_RED_TOGGLE();
 		break;
@@ -889,6 +921,25 @@ void ActionQT(){
 		//EnviarDatos(ENABLE_MOTOR_CMD);
 		CreateCANMessage(INVERTIR_2_CMD);
 		return;
+	}
+}
+
+uint32_t speedConvertionRPMtoDEC(float rpmSpeed){
+	float vel_aux = 0;
+	vel_aux = ((rpmSpeed * 512) * (10000.0/1875));
+	return (uint32_t)vel_aux;
+}
+
+float speedControl(float d, int Vmax){
+	LED_BLUE_TOGGLE();
+	if (d > 8) {
+		return Vmax+0.0;
+	} else if (d >= 4 && d <= 8) {
+		return (Vmax) - ((Vmax / 2) * ((8 - d) / 4.0));
+	} else if (d >= 1.5 && d < 4) {
+		return ((Vmax / 2) - ((Vmax/3) * ((4-d)/2.5)));
+	} else {
+		return 0.0;
 	}
 }
 
