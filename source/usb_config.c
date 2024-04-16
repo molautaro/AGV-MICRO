@@ -100,6 +100,9 @@ void workingmode();
 float speedControlCalc(float d, int Vmax);
 uint32_t speedConvertionRPMtoDEC(float rpmSpeed);
 void SpeedMotorControl();
+void SteeringMotorControl();
+int32_t positionConvert(int32_t pos_degree);
+void PositionMotorControl();
 /*******************************************************************************
  * Variables
  ******************************************************************************/
@@ -139,6 +142,14 @@ uint16_t timeoutUSB = 200;
 uint16_t timeoutBAT = 100;
 uint8_t rxBuf[256], txBuf[256], auxbufRX[256],auxbufTX[256], auxlenght;
 uint8_t operationMode = 0, init_comp = 0, timeoutINIT = 0;
+
+uint16_t COORD_SENSORES[8];
+const int SENS_MODEL_EXAC[] = {-7,-6,-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7};
+uint8_t pos_lin = 0;
+float error=0, lastError=0, integral=0, derivativo=0, turn=0;
+int32_t direccion=0;
+_sWork Kp, Kd, Ki;
+
 //uint8_t flag_carga_completa = 0;
 //uint8_t msj_CAN_BAT[8] = {0x02, 0x48, 0x01, 0x2C, 0x00, 0x00, 0x00, 0x00};
 //uint8_t msj_CAN_BAT2[8] = {0x00, 0x00, 0x00, 0x00, 0x0A, 0x0B, 0x0C, 0x0D};
@@ -147,6 +158,7 @@ uint16_t volt_bateria = 0;
 volatile _sFlag flag1, SensorsStatus, flagQT, flagQT_2;
 volatile _sWork RFIDData[2],DestinationStation[2],Distance_Sensor_SIMULATION;
 volatile _sWork SpeedMotorCalcRPM, SpeedMotorCalcRPMAUX,SpeedMotorCalcDEC;
+volatile _sWork PosSend;
 
 #define SENSORSTATUS_0 	SensorsStatus.bit.b0 //Estado Sensor 0
 #define SENSORSTATUS_1 	SensorsStatus.bit.b1 //Estado Sensor 1
@@ -269,7 +281,7 @@ int main(void) {
 	Distance_Sensor_SIMULATION.f = 2.0;
 	SpeedMotorCalcRPM.f = 0.0;
 	SpeedMotorCalcRPMAUX.f = 0.0;
-	//operationMode = 1;
+	operationMode = 1;
     while(1) {
     	USB_DeviceTasks();
     	//USB_DeviceCdcAcmSend(handle, ep, buffer, length)
@@ -350,7 +362,7 @@ void workingmode(){
 	break;
 	case 1://MODO MANUAL
 		SpeedMotorControl();
-		//SteeringMotorControl();
+		SteeringMotorControl();
 	break;
 	case 2:
 	break;
@@ -475,22 +487,22 @@ void DecodeMagneticSensor(){
 //cell state byte 1	H		 0000 011 sensores derecha
 //cell state byte 2	L		1000 0000 sensores izquierda
 // 0000 0110 1000 0000
-	magneticSensorBitStatus = ((uint16_t)RX_STD_CAN_BUF.frame->dataByte6 << 8) | RX_STD_CAN_BUF.frame->dataByte7;
+	//magneticSensorBitStatus = ((uint16_t)RX_STD_CAN_BUF.frame->dataByte6 << 8) | RX_STD_CAN_BUF.frame->dataByte7;
 
 	//for (i = 0; i < 8; ++i) {
 	//	SensorsStatus.byte =
 	//}
 
-	/*sensor0 = magneticSensorBitStatus & (1 << 8);
-	sensor1 = magneticSensorBitStatus & (1 << 9);
-	sensor2 = magneticSensorBitStatus & (1 << 10);
-	sensor3 = magneticSensorBitStatus & (1 << 11);
+	COORD_SENSORES[0] = (magneticSensorBitStatus & (1 << 8))>>8;
+	COORD_SENSORES[1] = (magneticSensorBitStatus & (1 << 9))>>9;
+	COORD_SENSORES[2] = (magneticSensorBitStatus & (1 << 10))>>10;
+	COORD_SENSORES[3] = (magneticSensorBitStatus & (1 << 11))>>11;
 	// -------------------------- LOW ------------------------- //
-	sensor4 = magneticSensorBitStatus & (1 << 0);
-	sensor5 = magneticSensorBitStatus & (1 << 1);
-	sensor6 = magneticSensorBitStatus & (1 << 2);
-	sensor7 = magneticSensorBitStatus & (1 << 3);
-	*/
+	COORD_SENSORES[4] = magneticSensorBitStatus & (1 << 0);
+	COORD_SENSORES[5] = (magneticSensorBitStatus & (1 << 1))>>1;
+	COORD_SENSORES[6] = (magneticSensorBitStatus & (1 << 2))>>2;
+	COORD_SENSORES[7] = (magneticSensorBitStatus & (1 << 3))>>3;
+
 }
 
 void Decode(){
@@ -663,6 +675,7 @@ void RecibirDatos(uint8_t head){
 				auxbufRX[var]=ringRx.buf[head++];
 			}
 			magneticSensorBitStatus = ((uint16_t)auxbufRX[7] << 8) | auxbufRX[8];
+			DecodeMagneticSensor();
 		break;
 		default:
 			//LED_RED_TOGGLE();
@@ -953,6 +966,67 @@ float speedControlCalc(float d, int Vmax){
 	} else {
 		return 0.0;
 	}
+}
+
+void SteeringMotorControl(int32_t direc_base){
+
+	Kp.u32 = 100;
+	Kd.u32 = 0;
+	Ki.u32 = 0;
+
+	direc_base = 0;
+
+	for(uint8_t i = 0; i < 8; i++){
+		if(COORD_SENSORES[i] == 1 && COORD_SENSORES[i+1] == 1){
+			pos_lin = i + (i+1);
+			//pos_lin2 = i+1;
+			break;
+		}else{
+			if(COORD_SENSORES[i] == 1){
+				pos_lin = i * 2;
+			}
+		}
+	}
+
+	error = SENS_MODEL_EXAC[pos_lin];
+
+	integral += error;
+
+	if(integral > 1000){
+		integral = 0;
+	}
+
+	derivativo = error - lastError;
+
+	turn = (Kp.u32 * error) + (Kd.u32 * derivativo) + (Ki.u32 * integral);
+
+	direccion = direc_base + turn;
+
+	lastError = error;
+
+	PositionMotorControl();
+
+}
+
+int32_t positionConvert(int32_t pos_degree){
+	int32_t pos_aux = 0;
+	pos_aux = ((pos_degree/5.49316)*1000);
+	return (int32_t)pos_aux;
+}
+
+void PositionMotorControl(){
+
+	PosSend.i32 = positionConvert(direccion);
+	auxbufRX[0] = 0x01;
+	auxbufRX[1] = 0x23;
+	auxbufRX[2] = 0x7A;
+	auxbufRX[3] = 0x60;
+	auxbufRX[4] = 0x00;
+	auxbufRX[5] = PosSend.i8[0];
+	auxbufRX[6] = PosSend.i8[1];
+	auxbufRX[7] = PosSend.i8[2];
+	auxbufRX[8] = PosSend.i8[3];
+	CreateCANMessage(POS_MOTOR_CMD);
 }
 
 /* PIT0_IRQn interrupt handler */
