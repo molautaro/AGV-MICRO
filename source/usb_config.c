@@ -45,6 +45,7 @@
 #define MANUAL_CMD 0xA5
 #define ACC_SPEED_CMD 0xA6
 #define DEC_SPEED_CMD 0xA7
+#define SPEED_POS_CMD 0xA8
 
 const uint8_t CARGA_BAT_MESSAGE[] = {0x02, 0x48, 0x01, 0x2C, 0x00, 0x00, 0x00, 0x00};
 const uint8_t SPEED_MODE_MESSAGE[] = {0x07,0x2F,0x60,0x60,0x00,0x03,0x00,0x00,0x00};
@@ -68,7 +69,7 @@ const uint8_t DESA_SPEED_10[] = {0x07,0x23,0x84,0x60,0x00,0x66,0x06,0x00,0x00};/
 const uint8_t DESA_SPEED_100[] = {0x07,0x23,0x84,0x60,0x00,0x00,0x40,0x00,0x00};//100 rpm/s
 const uint8_t DESA_SPEED_150[] = {0x07,0x23,0x84,0x60,0x00,0x00,0x60,0x00,0x00};//150 rpm/s
 
-
+const uint8_t POS_SPEED[] = {0x01,0x23,0x81,0x60,0x00,0xBC,0xBB,0xBB,0x03};//3000 rpm
 
 #define MSJ_BAT 0x01
 // para funcion ChargetoCANbuf(); whatFormat
@@ -339,6 +340,18 @@ void workingmode(){
 				}
 				CreateCANMessage(DEC_SPEED_CMD);
 			break;
+			case 3:
+				for (uint8_t var = 0; var < 9; var++) {
+					auxbufRX[var]=POS_MODE_MESSAGE[var];
+				}
+				CreateCANMessage(POSITION_MODE_CMD);
+			break;
+			case 4:
+				for (uint8_t var = 0; var < 9; var++) {
+					auxbufRX[var]=POS_SPEED[var];
+				}
+				CreateCANMessage(SPEED_POS_CMD);
+			break;
 			}
 			timeoutINIT = 50;
 		}
@@ -393,15 +406,17 @@ void DecodeCANMessage(){
 			LED_GREEN_TOGGLE();
 			if(operationMode==0){
 				init_comp++;
-				if (init_comp == 3)
-					operationMode = 1;
+//				if (init_comp == 3)
+//					operationMode = 1;
 			}
 		break;
 		case ID_REC_MOTOR_DIRECTION:
 			READY_RECIVE = 1;
 			if(operationMode==0){
+				init_comp++;
 				//FIRST_INIT=0;
-				operationMode=1;
+				if (init_comp == 5)
+					operationMode = 1;
 			}
 
 		break;
@@ -816,6 +831,9 @@ void CreateCANMessage(uint8_t msj){
 		case DEC_SPEED_CMD:
 			ChargeToCANBuf(DATA_STD, auxbufRX, FLEXCAN_ID_STD(auxbufRX[0] + 0x600));
 		break;
+		case SPEED_POS_CMD:
+			ChargeToCANBuf(DATA_STD, auxbufRX, FLEXCAN_ID_STD(auxbufRX[0] + 0x600));
+		break;
 	}
 	FLEXCAN_TransferSendNonBlocking(CAN0, &flexcanHandle, &TX_CAN_BUF);
 	READY_RECIVE=0;
@@ -1001,6 +1019,14 @@ void SteeringMotorControl(int32_t direc_base){
 	turn = (Kp.u32 * error) + (Kd.u32 * derivativo) + (Ki.u32 * integral);
 
 	direccion = direc_base + turn;
+
+	if(direccion > 21000){
+		direccion = 21000;
+	}else{
+		if(direccion < -21000){
+			direccion = -21000;
+		}
+	}
 
 	lastError = error;
 
