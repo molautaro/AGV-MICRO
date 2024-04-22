@@ -140,9 +140,9 @@ volatile uint32_t timerCounter;
 volatile _rx ringRx, auxRX;
 volatile _tx ringTx, auxTX;
 uint16_t timeoutUSB = 200;
-uint16_t timeoutBAT = 100;
+uint16_t timeoutBAT = 100, timeoutDIREC = 250;
 uint8_t rxBuf[256], txBuf[256], auxbufRX[256],auxbufTX[256], auxlenght;
-uint8_t operationMode = 0, init_comp = 0, timeoutINIT = 0;
+uint8_t operationMode = 0, init_comp = 3, timeoutINIT = 0;
 
 uint16_t COORD_SENSORES[8];
 const int SENS_MODEL_EXAC[] = {-7,-6,-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7};
@@ -282,7 +282,7 @@ int main(void) {
 	Distance_Sensor_SIMULATION.f = 2.0;
 	SpeedMotorCalcRPM.f = 0.0;
 	SpeedMotorCalcRPMAUX.f = 0.0;
-	operationMode = 1;
+	operationMode = 0;
     while(1) {
     	USB_DeviceTasks();
     	//USB_DeviceCdcAcmSend(handle, ep, buffer, length)
@@ -412,6 +412,7 @@ void DecodeCANMessage(){
 		break;
 		case ID_REC_MOTOR_DIRECTION:
 			READY_RECIVE = 1;
+			LED_GREEN_TOGGLE();
 			if(operationMode==0){
 				init_comp++;
 				//FIRST_INIT=0;
@@ -1018,7 +1019,7 @@ void SteeringMotorControl(int32_t direc_base){
 
 	turn = (Kp.u32 * error) + (Kd.u32 * derivativo) + (Ki.u32 * integral);
 
-	direccion = direc_base + turn;
+	direccion = (direc_base + turn) * 30;//el *30 es pq la correcion era muy chica, se revisa dsp
 
 	if(direccion > 21000){
 		direccion = 21000;
@@ -1052,7 +1053,10 @@ void PositionMotorControl(){
 	auxbufRX[6] = PosSend.i8[1];
 	auxbufRX[7] = PosSend.i8[2];
 	auxbufRX[8] = PosSend.i8[3];
-	CreateCANMessage(POS_MOTOR_CMD);
+	if(!timeoutDIREC){
+		CreateCANMessage(POS_MOTOR_CMD);
+		timeoutDIREC=250;
+	}
 }
 
 /* PIT0_IRQn interrupt handler */
@@ -1076,6 +1080,10 @@ void PIT_CHANNEL_0_IRQHANDLER(void) {
   if(timeoutINIT){
 	  timeoutINIT--;
    }
+
+  if(timeoutDIREC){
+ 	  timeoutDIREC--;
+    }
 
   if(ringRx.timeout){
 	  ringRx.timeout--;
