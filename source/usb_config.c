@@ -149,7 +149,6 @@ const int SENS_MODEL_EXAC[] = {-7,-6,-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7};
 uint8_t pos_lin = 0;
 float error=0, lastError=0, integral=0, derivativo=0, turn=0;
 int32_t direccion=0;
-_sWork Kp, Kd, Ki;
 
 //uint8_t flag_carga_completa = 0;
 //uint8_t msj_CAN_BAT[8] = {0x02, 0x48, 0x01, 0x2C, 0x00, 0x00, 0x00, 0x00};
@@ -160,6 +159,8 @@ volatile _sFlag flag1, SensorsStatus, flagQT, flagQT_2;
 volatile _sWork RFIDData[2],DestinationStation[2],Distance_Sensor_SIMULATION;
 volatile _sWork SpeedMotorCalcRPM, SpeedMotorCalcRPMAUX,SpeedMotorCalcDEC;
 volatile _sWork PosSend;
+_sWork Kp_SteeringMotor, Kd_SteeringMotor, Ki_SteeringMotor;
+
 
 #define SENSORSTATUS_0 	SensorsStatus.bit.b0 //Estado Sensor 0
 #define SENSORSTATUS_1 	SensorsStatus.bit.b1 //Estado Sensor 1
@@ -283,6 +284,11 @@ int main(void) {
 	SpeedMotorCalcRPM.f = 0.0;
 	SpeedMotorCalcRPMAUX.f = 0.0;
 	operationMode = 0;
+
+	Kp_SteeringMotor.u32 = 30000;
+	Kd_SteeringMotor.u32 = 0;
+	Ki_SteeringMotor.u32 = 0;
+
     while(1) {
     	USB_DeviceTasks();
     	//USB_DeviceCdcAcmSend(handle, ep, buffer, length)
@@ -693,6 +699,19 @@ void RecibirDatos(uint8_t head){
 			magneticSensorBitStatus = ((uint16_t)auxbufRX[7] << 8) | auxbufRX[8];
 			DecodeMagneticSensor();
 		break;
+		case 0xCF:
+			for (uint8_t var = 0; var < 9; var++) {
+				auxbufRX[var]=ringRx.buf[head++];
+			}
+			Kp_SteeringMotor.u8[0]=auxbufRX[1];
+			Kp_SteeringMotor.u8[1]=auxbufRX[2];
+			Kp_SteeringMotor.u8[2]=auxbufRX[3];
+			Kp_SteeringMotor.u8[3]=auxbufRX[4];
+			Kd_SteeringMotor.u8[0]=auxbufRX[5];
+			Kd_SteeringMotor.u8[1]=auxbufRX[6];
+			Kd_SteeringMotor.u8[2]=auxbufRX[7];
+			Kd_SteeringMotor.u8[3]=auxbufRX[8];
+		break;
 		default:
 			//LED_RED_TOGGLE();
 		break;
@@ -989,10 +1008,6 @@ float speedControlCalc(float d, int Vmax){
 
 void SteeringMotorControl(int32_t direc_base){
 
-	Kp.u32 = 100;
-	Kd.u32 = 0;
-	Ki.u32 = 0;
-
 	direc_base = 0;
 
 	for(uint8_t i = 0; i < 8; i++){
@@ -1017,9 +1032,9 @@ void SteeringMotorControl(int32_t direc_base){
 
 	derivativo = error - lastError;
 
-	turn = (Kp.u32 * error) + (Kd.u32 * derivativo) + (Ki.u32 * integral);
+	turn = (Kp_SteeringMotor.u32 * error) + (Kd_SteeringMotor.u32 * derivativo) + (Ki_SteeringMotor.u32 * integral);
 
-	direccion = (direc_base + turn) * 30;//el *30 es pq la correcion era muy chica, se revisa dsp
+	direccion = (direc_base + turn);//el *30 es pq la correcion era muy chica, se revisa dsp
 
 	if(direccion > 21000){
 		direccion = 21000;
