@@ -283,7 +283,7 @@ int main(void) {
 	Distance_Sensor_SIMULATION.f = 2.0;
 	SpeedMotorCalcRPM.f = 0.0;
 	SpeedMotorCalcRPMAUX.f = 0.0;
-	operationMode = 0;
+	operationMode = 1;
 
 	Kp_SteeringMotor.u32 = 30000;
 	Kd_SteeringMotor.u32 = 0;
@@ -511,7 +511,7 @@ void DecodeMagneticSensor(){
 //cell state byte 1	H		 0000 011 sensores derecha
 //cell state byte 2	L		1000 0000 sensores izquierda
 // 0000 0110 1000 0000
-	//magneticSensorBitStatus = ((uint16_t)RX_STD_CAN_BUF.frame->dataByte6 << 8) | RX_STD_CAN_BUF.frame->dataByte7;
+	magneticSensorBitStatus = ((uint16_t)RX_STD_CAN_BUF.frame->dataByte6 << 8) | RX_STD_CAN_BUF.frame->dataByte7;
 
 	//for (i = 0; i < 8; ++i) {
 	//	SensorsStatus.byte =
@@ -698,7 +698,7 @@ void RecibirDatos(uint8_t head){
 			for (uint8_t var = 0; var < 9; var++) {
 				auxbufRX[var]=ringRx.buf[head++];
 			}
-			magneticSensorBitStatus = ((uint16_t)auxbufRX[7] << 8) | auxbufRX[8];
+			//magneticSensorBitStatus = ((uint16_t)auxbufRX[7] << 8) | auxbufRX[8];
 			DecodeMagneticSensor();
 		break;
 		case 0xCF:
@@ -1013,12 +1013,12 @@ void SteeringMotorControl(int32_t direc_base){
 	direc_base = 0;
 
 	for(uint8_t i = 0; i < 8; i++){
-		if(COORD_SENSORES[i] == 1 && COORD_SENSORES[i+1] == 1){
+		if(COORD_SENSORES[i] == 0 && COORD_SENSORES[i+1] == 0){
 			pos_lin = i + (i+1);
 			//pos_lin2 = i+1;
 			break;
 		}else{
-			if(COORD_SENSORES[i] == 1){
+			if(COORD_SENSORES[i] == 0){
 				pos_lin = i * 2;
 			}
 		}
