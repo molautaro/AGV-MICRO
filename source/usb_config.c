@@ -104,6 +104,7 @@ void SpeedMotorControl();
 void SteeringMotorControl();
 int32_t positionConvert(int32_t pos_degree);
 void PositionMotorControl();
+void BrakeControl();
 /*******************************************************************************
  * Variables
  ******************************************************************************/
@@ -142,7 +143,7 @@ volatile _tx ringTx, auxTX;
 uint16_t timeoutUSB = 200;
 uint16_t timeoutBAT = 100, timeoutDIREC = 250;
 uint8_t rxBuf[256], txBuf[256], auxbufRX[256],auxbufTX[256], auxlenght;
-uint8_t operationMode = 0, init_comp = 3, timeoutINIT = 0;
+uint8_t operationMode = 0, init_comp = 3, timeoutINIT = 0,timeoutBRAKE=0, brakestatus=0;
 
 uint16_t COORD_SENSORES[8];
 const int SENS_MODEL_EXAC[] = {-7,-6,-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7};
@@ -380,11 +381,14 @@ void workingmode(){
 		/* poner aqui lo que iria en el buffer*/
 	break;
 	case 1://MODO MANUAL
-		SpeedMotorControl();
-		SteeringMotorControl();
+		SpeedMotorControl(); //funcion control velocidad
+		SteeringMotorControl(); //funcion control direccion
 	break;
 	case 2:
-		//funcion de frenado.
+		if(!timeoutBRAKE || READY_RECIVE){
+			BrakeControl();//funcion de frenado.
+		}
+
 	break;
 	}
 }
@@ -416,6 +420,9 @@ void DecodeCANMessage(){
 //				if (init_comp == 3)
 //					operationMode = 1;
 			}
+			if(operationMode==2){
+				brakestatus++;
+			}
 		break;
 		case ID_REC_MOTOR_DIRECTION:
 			READY_RECIVE = 1;
@@ -426,7 +433,9 @@ void DecodeCANMessage(){
 				if (init_comp == 5)
 					operationMode = 1;
 			}
-
+			if(operationMode==2){
+				brakestatus++;
+			}
 		break;
 		default:
 			break;
@@ -501,6 +510,7 @@ void DecodeRFIDSensor(){
 	if (RFIDData[0].u16[0]==DestinationStation[0].u16[0]){
 		LED_GREEN_TOGGLE();//LLEGO A DESTINO
 		operationMode = 2;
+		brakestatus=0;
 	}
 	else{
 		LED_RED_TOGGLE();//NO LLEGO A DESTINO
@@ -969,12 +979,46 @@ void ActionQT(){
 	}
 }
 
+void BrakeControl(){
+	switch(brakestatus){
+	case 0:
+		SpeedMotorCalcDEC.i32 = 0;
+		auxbufRX[0] = 0x07; //id motor velocidad
+		auxbufRX[1] = 0x23;
+		auxbufRX[2] = 0xFF;
+		auxbufRX[3] = 0x60;
+		auxbufRX[4] = 0x00;
+		auxbufRX[5] = SpeedMotorCalcDEC.i8[0];
+		auxbufRX[6] = SpeedMotorCalcDEC.i8[1];
+		auxbufRX[7] = SpeedMotorCalcDEC.i8[2];
+		auxbufRX[8] = SpeedMotorCalcDEC.i8[3];
+		timeoutBRAKE = 5;
+	break;
+	case 1:
+		for (uint8_t i = 0; i < 9; ++i) {
+			auxbufRX[i]=DISABLE_MVEL[i];
+		}
+		CreateCANMessage(DISABLE_MOTOR_CMD);
+		timeoutBRAKE = 5;
+	break;
+	case 2:
+		for (uint8_t i = 0; i < 9; ++i) {
+			auxbufRX[i]=DISABLE_MPOS[i];
+		}
+		CreateCANMessage(DISABLE_MOTOR_CMD);
+		timeoutBRAKE = 5;
+	break;
+	case 3:
+	break;
+	}
+}
+
 void SpeedMotorControl(){
 	SpeedMotorCalcRPMAUX.f = speedControlCalc(Distance_Sensor_SIMULATION.f, 3000);
 	if(fabs(SpeedMotorCalcRPM.f-SpeedMotorCalcRPMAUX.f) >= 50){
 		//cambiar velocidad porque el cambio es de mas de 50rpm
 		SpeedMotorCalcRPM.f = SpeedMotorCalcRPMAUX.f;
-		SpeedMotorCalcDEC.u32 = speedConvertionRPMtoDEC(SpeedMotorCalcRPM.f);
+		SpeedMotorCalcDEC.i32 = speedConvertionRPMtoDEC(SpeedMotorCalcRPM.f);
 		auxbufRX[0] = 0x07; //id motor
 		auxbufRX[1] = 0x23;
 		auxbufRX[2] = 0xFF;
@@ -992,7 +1036,7 @@ void SpeedMotorControl(){
 uint32_t speedConvertionRPMtoDEC(float rpmSpeed){
 	float vel_aux = 0;
 	vel_aux = ((rpmSpeed * 512) * (10000.0/1875));
-	return (uint32_t)vel_aux;
+	return (int32_t)vel_aux;
 }
 
 float speedControlCalc(float d, int Vmax){
@@ -1101,6 +1145,10 @@ void PIT_CHANNEL_0_IRQHANDLER(void) {
   if(timeoutDIREC){
  	  timeoutDIREC--;
     }
+
+  if(timeoutBRAKE){
+	  timeoutBRAKE--;
+  }
 
   if(ringRx.timeout){
 	  ringRx.timeout--;
