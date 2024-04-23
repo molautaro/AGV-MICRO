@@ -384,12 +384,13 @@ void workingmode(){
 		SteeringMotorControl();
 	break;
 	case 2:
+		//funcion de frenado.
 	break;
 	}
 }
 
 void DecodeCANMessage(){
-	switch (RX_STD_CAN_BUF.frame->id) {
+	switch (RX_STD_Frame.id) {
 		case ID_RFID_SENSOR: //cuando el mensaje que llego es del RFID
 			//LED_GREEN_TOGGLE();
 			DecodeRFIDSensor();
@@ -400,8 +401,8 @@ void DecodeCANMessage(){
 			break;
 		case ID_REC_BATERIA: //cuando la bateria manda algo
 			//ESCRIBO COSAS PARA CARGA DE BATERIA
-			volt_bateria |= (RX_STD_CAN_BUF.frame->dataByte0) <<8;
-			volt_bateria |= RX_STD_CAN_BUF.frame->dataByte1;
+			volt_bateria |= (RX_STD_Frame.dataByte0) <<8;
+			volt_bateria |= RX_STD_Frame.dataByte1;
 			if(volt_bateria == 534){
 				BATT_FULL_CHARGE = 1;
 				//enviar msj a display para indicar que la bateria esta llena
@@ -488,17 +489,18 @@ static void flexcan_callback(CAN_Type *base, flexcan_handle_t *handle, status_t 
 }
 
 void DecodeRFIDSensor(){
-	RFIDData[0].u8[0] = RX_STD_CAN_BUF.frame->dataByte0;
-	RFIDData[0].u8[1] = RX_STD_CAN_BUF.frame->dataByte1;
-	RFIDData[0].u8[2] = RX_STD_CAN_BUF.frame->dataByte2;
-	RFIDData[0].u8[3] = RX_STD_CAN_BUF.frame->dataByte3;
-	RFIDData[1].u8[0] = RX_STD_CAN_BUF.frame->dataByte4;
-	RFIDData[1].u8[1] = RX_STD_CAN_BUF.frame->dataByte5;
-	RFIDData[1].u8[2] = RX_STD_CAN_BUF.frame->dataByte6;
-	RFIDData[1].u8[3] = RX_STD_CAN_BUF.frame->dataByte7;
+	RFIDData[0].u8[0] = RX_STD_Frame.dataByte0;
+	RFIDData[0].u8[1] = RX_STD_Frame.dataByte1;
+	RFIDData[0].u8[2] = RX_STD_Frame.dataByte2;
+	RFIDData[0].u8[3] = RX_STD_Frame.dataByte3;
+	RFIDData[1].u8[0] = RX_STD_Frame.dataByte4;
+	RFIDData[1].u8[1] = RX_STD_Frame.dataByte5;
+	RFIDData[1].u8[2] = RX_STD_Frame.dataByte6;
+	RFIDData[1].u8[3] = RX_STD_Frame.dataByte7;
 
 	if (RFIDData[0].u16[0]==DestinationStation[0].u16[0]){
 		LED_GREEN_TOGGLE();//LLEGO A DESTINO
+		operationMode = 2;
 	}
 	else{
 		LED_RED_TOGGLE();//NO LLEGO A DESTINO
