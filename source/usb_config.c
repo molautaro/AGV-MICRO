@@ -286,7 +286,7 @@ int main(void) {
 	SpeedMotorCalcRPMAUX.f = 0.0;
 	operationMode = 1;
 
-	Kp_SteeringMotor.u32 = 30000;
+	Kp_SteeringMotor.u32 = 0;
 	Kd_SteeringMotor.u32 = 0;
 	Ki_SteeringMotor.u32 = 0;
 
@@ -1055,6 +1055,7 @@ float speedControlCalc(float d, int Vmax){
 void SteeringMotorControl(int32_t direc_base){
 
 	direc_base = 0;
+	pos_lin = 0;
 
 	for(uint8_t i = 0; i < 8; i++){
 		if(COORD_SENSORES[i] == 0 && COORD_SENSORES[i+1] == 0){
@@ -1066,6 +1067,10 @@ void SteeringMotorControl(int32_t direc_base){
 				pos_lin = i * 2;
 			}
 		}
+	}
+
+	if(pos_lin > 14){
+		pos_lin = 14;
 	}
 
 	error = SENS_MODEL_EXAC[pos_lin];
@@ -1116,7 +1121,7 @@ void PositionMotorControl(){
 	auxbufRX[8] = PosSend.i8[3];
 	if(!timeoutDIREC){
 		CreateCANMessage(POS_MOTOR_CMD);
-		timeoutDIREC=250;
+		timeoutDIREC=50;
 	}
 }
 
