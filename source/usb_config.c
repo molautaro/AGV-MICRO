@@ -12,51 +12,54 @@
 
 /* insert other include files here. */
 
-#define INITESPCMD 0xC0 //Inicializar ESP
-#define MOTORSCMD 0xD0 //comando motor
-#define TESTCMD 0xD2 // COMANDO ON/OFF MOTOR
-#define ALIVECMD 0xF0 // comando alive
-#define ID_M_DIREC FLEXCAN_ID_STD(0x601) //ID CAN MOTOR DIRECCION
-#define ID_M_VEL FLEXCAN_ID_STD(0x607) //ID CAN MOTOR VELOCIDAD O TRACCION
-#define RX_MESSAGE_STD_BUFFER_NUM (0)
-#define RX_MESSAGE_EXT_BUFFER_NUM (1)
-#define TX_MESSAGE_BUFFER_NUM (2)
-#define TX_STD_MESSAGE_BUFFER_NUM (3)
-#define BATTERY_RECEIVE_ID 0x18FF50E5
-#define BATTERY_SEND_ID 0x1806E5F4
-#define ID_RFID_SENSOR FLEXCAN_ID_STD(0x100)
-#define ID_MAGNETIC_SENSOR FLEXCAN_ID_STD(0x123)
-#define ID_SEND_BATERIA FLEXCAN_ID_EXT(0x1806E5F4)//ID de msjs enviados desde placa a la bateria
-#define ID_REC_BATERIA FLEXCAN_ID_EXT(0x18FF50E5)//ID de msjs que recibe la placa desde la bateria
-#define ID_REC_MOTOR_SPEED FLEXCAN_ID_STD(0x587)
-#define ID_REC_MOTOR_DIRECTION FLEXCAN_ID_STD(0x581)
+#define ID_M_DIREC 								FLEXCAN_ID_STD(0x601) //ID CAN MOTOR DIRECCION
+#define ID_M_VEL 								FLEXCAN_ID_STD(0x607) //ID CAN MOTOR VELOCIDAD O TRACCION
+#define RX_MESSAGE_STD_BUFFER_NUM 				(0)
+#define RX_MESSAGE_EXT_BUFFER_NUM 				(1)
+#define TX_MESSAGE_BUFFER_NUM					(2)
+#define TX_STD_MESSAGE_BUFFER_NUM 				(3)
+#define ID_RFID_SENSOR 							FLEXCAN_ID_STD(0x100)
+#define ID_MAGNETIC_SENSOR 						FLEXCAN_ID_STD(0x123)
+#define ID_SEND_BATERIA 						FLEXCAN_ID_EXT(0x1806E5F4)//ID de msjs enviados desde placa a la bateria
+#define ID_REC_BATERIA 							FLEXCAN_ID_EXT(0x18FF50E5)//ID de msjs que recibe la placa desde la bateria
+#define ID_REC_MOTOR_SPEED 						FLEXCAN_ID_STD(0x587)
+#define ID_REC_MOTOR_DIRECTION 					FLEXCAN_ID_STD(0x581)
+#define ID_MOTOR_SPEED_ALIVE 					FLEXCAN_ID_STD(0x707)
+#define ID_MOTOR_DIRECTION_ALIVE 				FLEXCAN_ID_STD(0x701)
 
 
 //Comandos recibidos de QT
-#define SPEED_MODE_CMD 0xA3
-#define POSITION_MODE_CMD 0xA1
-#define ENABLE_MOTOR_CMD 0x01 //COMANDO ENABLE MOTOR
-#define DISABLE_MOTOR_CMD 0x02 // COMANDO DISABLE MOTOR
-#define INVERTIR_1_CMD 0x03
-#define INVERTIR_2_CMD 0x04
-#define READY_POSI_CMD 0x05
-#define SPEED_MOTOR_CMD 0x06
-#define POS_MOTOR_CMD 0x07
-#define MANUAL_CMD 0xA5
-#define ACC_SPEED_CMD 0xA6
-#define DEC_SPEED_CMD 0xA7
-#define SPEED_POS_CMD 0xA8
 
-const uint8_t CARGA_BAT_MESSAGE[] = {0x02, 0x48, 0x01, 0x2C, 0x00, 0x00, 0x00, 0x00};
-const uint8_t SPEED_MODE_MESSAGE[] = {0x07,0x2F,0x60,0x60,0x00,0x03,0x00,0x00,0x00};
-const uint8_t POS_MODE_MESSAGE[] = {0x01,0x2F,0x60,0x60,0x00,0x01,0x00,0x00,0x00};
-const uint8_t ENABLE_MVEL[] = {0x07,0x2B,0x40,0x60,0x00,0x0F,0x00,0x00,0x00};
-const uint8_t ENABLE_MPOS[] = {0x01,0x2B,0x40,0x60,0x00,0x0F,0x00,0x00,0x00};
-const uint8_t DISABLE_MVEL[] = {0x07,0x2B,0x40,0x60,0x00,0x06,0x00,0x00,0x00};
-const uint8_t DISABLE_MPOS[] = {0x01,0x2B,0x40,0x60,0x00,0x06,0x00,0x00,0x00};
-const uint8_t READY_POS[] = {0x01,0x2B,0x40,0x60,0x00,0x3F,0x10,0x00,0x00};
-const uint8_t INVERTIR_1[] = {0x07,0x2F,0x60,0x7E,0x00,0x01,0x00,0x00,0x00};
-const uint8_t INVERTIR_2[] = {0x07,0x2F,0x60,0x7E,0x00,0x00,0x00,0x00,0x00};
+#define INITESPCMD 								0xC0 //Inicializar ESP
+#define MOTORSCMD 								0xD0 //comando motor
+#define TESTCMD 								0xD2 // COMANDO ON/OFF MOTOR
+#define ALIVECMD 								0xF0 // comando alive
+
+#define ENABLE_MOTOR_CMD 						0x01 //COMANDO ENABLE MOTOR
+#define DISABLE_MOTOR_CMD 						0x02 // COMANDO DISABLE MOTOR
+#define INVERTIR_1_CMD 							0x03
+#define INVERTIR_2_CMD 							0x04
+#define READY_POSI_CMD 							0x05
+#define SPEED_MOTOR_CMD 						0x06
+#define POS_MOTOR_CMD 							0x07
+#define POSITION_MODE_CMD 						0xA1
+#define SPEED_MODE_CMD 							0xA3
+#define MANUAL_CMD 								0xA5
+#define ACC_SPEED_CMD 							0xA6
+#define DEC_SPEED_CMD 							0xA7
+#define SPEED_POS_CMD 							0xA8
+#define FAULT_CMD								0xA9
+
+const uint8_t CARGA_BAT_MESSAGE[] = 	{0x02, 0x48, 0x01, 0x2C, 0x00, 0x00, 0x00, 0x00};
+const uint8_t SPEED_MODE_MESSAGE[] = 	{0x07,0x2F,0x60,0x60,0x00,0x03,0x00,0x00,0x00};
+const uint8_t POS_MODE_MESSAGE[] = 		{0x01,0x2F,0x60,0x60,0x00,0x01,0x00,0x00,0x00};
+const uint8_t ENABLE_MVEL[] = 			{0x07,0x2B,0x40,0x60,0x00,0x0F,0x00,0x00,0x00};
+const uint8_t ENABLE_MPOS[] = 			{0x01,0x2B,0x40,0x60,0x00,0x0F,0x00,0x00,0x00};
+const uint8_t DISABLE_MVEL[] = 			{0x07,0x2B,0x40,0x60,0x00,0x06,0x00,0x00,0x00};
+const uint8_t DISABLE_MPOS[] = 			{0x01,0x2B,0x40,0x60,0x00,0x06,0x00,0x00,0x00};
+const uint8_t READY_POS[] = 			{0x01,0x2B,0x40,0x60,0x00,0x3F,0x10,0x00,0x00};
+const uint8_t INVERTIR_1[] = 			{0x07,0x2F,0x60,0x7E,0x00,0x01,0x00,0x00,0x00};
+const uint8_t INVERTIR_2[] = 			{0x07,0x2F,0x60,0x7E,0x00,0x00,0x00,0x00,0x00};
 
 //const uint8_t TARGET_SPEED[] = {0x07,0x23,0xFF,0x60,0x00,X,X,X,X};
 //const uint8_t TARGET_POS[] = {0x01,0x23,0x7A,0x60,0x00,X,X,X,X};
@@ -105,6 +108,8 @@ void SteeringMotorControl();
 int32_t positionConvert(int32_t pos_degree);
 void PositionMotorControl();
 void BrakeControl();
+void checkDeviceConnection();
+void CheckFaults();
 /*******************************************************************************
  * Variables
  ******************************************************************************/
@@ -140,6 +145,7 @@ uint8_t cmdaux222 = 0;
 volatile uint32_t timerCounter;
 volatile _rx ringRx, auxRX;
 volatile _tx ringTx, auxTX;
+uint16_t timeoutMotorVel = 200, timeoutMotorDir = 200, timeoutMagSensor = 200, timeoutRFIDSensor = 200,timeoutHMI = 200;
 uint16_t timeoutUSB = 200;
 uint16_t timeoutBAT = 100, timeoutDIREC = 250;
 uint8_t rxBuf[256], txBuf[256], auxbufRX[256],auxbufTX[256], auxlenght;
@@ -156,50 +162,70 @@ int32_t direccion=0;
 //uint8_t msj_CAN_BAT2[8] = {0x00, 0x00, 0x00, 0x00, 0x0A, 0x0B, 0x0C, 0x0D};
 uint16_t magneticSensorBitStatus;
 uint16_t volt_bateria = 0;
-volatile _sFlag flag1, SensorsStatus, flagQT, flagQT_2;
+volatile _sFlag flag1, flag2, flagFaults,SensorsStatus, flagQT, flagQT_2;
 volatile _sWork RFIDData[2],DestinationStation[2],Distance_Sensor_SIMULATION;
 volatile _sWork SpeedMotorCalcRPM, SpeedMotorCalcRPMAUX,SpeedMotorCalcDEC;
 volatile _sWork PosSend;
 _sWork Kp_SteeringMotor, Kd_SteeringMotor, Ki_SteeringMotor;
 
 
-#define SENSORSTATUS_0 	SensorsStatus.bit.b0 //Estado Sensor 0
-#define SENSORSTATUS_1 	SensorsStatus.bit.b1 //Estado Sensor 1
-#define SENSORSTATUS_2 	SensorsStatus.bit.b2 //Estado Sensor 2
-#define SENSORSTATUS_3 	SensorsStatus.bit.b3 //Estado Sensor 3
-#define SENSORSTATUS_4 	SensorsStatus.bit.b4 //Estado Sensor 4
-#define SENSORSTATUS_5 	SensorsStatus.bit.b5 //Estado Sensor 5
-#define SENSORSTATUS_6 	SensorsStatus.bit.b6 //Estado Sensor 6
-#define SENSORSTATUS_7 	SensorsStatus.bit.b7 //Estado Sensor 7
+#define SENSORSTATUS_0 						SensorsStatus.bit.b0 //Estado Sensor 0
+#define SENSORSTATUS_1 						SensorsStatus.bit.b1 //Estado Sensor 1
+#define SENSORSTATUS_2 						SensorsStatus.bit.b2 //Estado Sensor 2
+#define SENSORSTATUS_3 						SensorsStatus.bit.b3 //Estado Sensor 3
+#define SENSORSTATUS_4 						SensorsStatus.bit.b4 //Estado Sensor 4
+#define SENSORSTATUS_5 						SensorsStatus.bit.b5 //Estado Sensor 5
+#define SENSORSTATUS_6 						SensorsStatus.bit.b6 //Estado Sensor 6
+#define SENSORSTATUS_7 						SensorsStatus.bit.b7 //Estado Sensor 7
 
 
-#define w 	flag1.bit.b0 //
-#define RX_CAN_COMPLETE flag1.bit.b1
-#define BATT_FULL_CHARGE flag1.bit.b2
-#define INIT_COMPLETE 			flag1.bit.b3
-#define SELECT_MANUAL 			flag1.bit.b4
-#define SELECT_AUTO 			flag1.bit.b5
-#define FIRST_INIT 		flag1.bit.b6
-#define READY_RECIVE 		flag1.bit.b7
+#define w 									flag1.bit.b0 //
+#define RX_CAN_COMPLETE 					flag1.bit.b1
+#define BATT_FULL_CHARGE 					flag1.bit.b2
+#define INIT_COMPLETE 						flag1.bit.b3
+#define SELECT_MANUAL 						flag1.bit.b4
+#define SELECT_AUTO 						flag1.bit.b5
+#define FIRST_INIT 							flag1.bit.b6
+#define READY_RECIVE 						flag1.bit.b7
+
+#define MOTOR_VEL_CONNECTED 				flag2.bit.b0 //Motor velocidad conectado
+#define MOTOR_DIR_CONNECTED					flag2.bit.b1 //Motor direccion conectado
+#define MAG_SENSOR_CONNECTED				flag2.bit.b2 //Sensor magnetico conectado
+#define RFID_SENSOR_CONNECTED				flag2.bit.b3 //Sensor RFID Conectado
+#define HMI_CONNECTED						flag2.bit.b4 //HMI Conectado
+#define DDDDDD 								flag2.bit.b5 //reserva
+#define DDDDDDD 							flag2.bit.b6 //reserva
+#define ALL_DEVICES_CONNECTED				flag2.bit.b7 //Todos los dispositivos conectados
+
+#define GLOBAL_FAULT						flagFaults.bit.b0
+#define COMMUNICATION_FAULT					flagFaults.bit.b1
+#define sss									flagFaults.bit.b2
+#define ssss								flagFaults.bit.b3
+#define sssss								flagFaults.bit.b4
+#define ssssss								flagFaults.bit.b5
+#define sssssss								flagFaults.bit.b6
+#define ssssssss							flagFaults.bit.b7
+
+
 
 //PARA COMANDOS RECIBIDOS POR QT
-#define ALIVE_RECIVE_CMD 	 flagQT.bit.b0 //RECIBIO alive
-#define ENABLE_RECIVE_CMD 	 flagQT.bit.b1
-#define DISABLE_RECIVE_CMD	 flagQT.bit.b2
-#define INVERTIR1_RECIVE_CMD flagQT.bit.b3
-#define INVERTIR2_RECIVE_CMD flagQT.bit.b4
-#define SPEED_MODE_REC_CMD		 flagQT.bit.b5
-#define POSITION_MODE_REC_CMD	 flagQT.bit.b6
-#define READY_POS_REC_CMD	     flagQT.bit.b7
+#define ALIVE_RECIVE_CMD 	 				flagQT.bit.b0 //RECIBIO alive
+#define ENABLE_RECIVE_CMD 	 				flagQT.bit.b1
+#define DISABLE_RECIVE_CMD	 				flagQT.bit.b2
+#define INVERTIR1_RECIVE_CMD 				flagQT.bit.b3
+#define INVERTIR2_RECIVE_CMD 				flagQT.bit.b4
+#define SPEED_MODE_REC_CMD		 			flagQT.bit.b5
+#define POSITION_MODE_REC_CMD	 			flagQT.bit.b6
+#define READY_POS_REC_CMD	     			flagQT.bit.b7
 
-#define TARGET_SPEED_REC_CMD   	flagQT_2.bit.b0
-#define TARGET_POS_REC_CMD     	flagQT_2.bit.b1
-#define MANUAL_CMD_REC  		flagQT_2.bit.b2
-#define AAAAA   			flagQT_2.bit.b3
-#define AAAAAA   			flagQT_2.bit.b4
-#define AAAAAAA   			flagQT_2.bit.b5
-#define AAAAAAAA  			flagQT_2.bit.b6
-#define AAAAAAAAA   		flagQT_2.bit.b7
+#define TARGET_SPEED_REC_CMD   				flagQT_2.bit.b0
+#define TARGET_POS_REC_CMD     				flagQT_2.bit.b1
+#define MANUAL_CMD_REC  					flagQT_2.bit.b2
+#define AAAAA   							flagQT_2.bit.b3
+#define AAAAAA   							flagQT_2.bit.b4
+#define AAAAAAA   							flagQT_2.bit.b5
+#define AAAAAAAA  							flagQT_2.bit.b6
+#define AAAAAAAAA   						flagQT_2.bit.b7
 
 flexcan_handle_t rxHandle, txHandle, flexcanHandle;
 flexcan_frame_t txFrame, RX_STD_Frame, RX_EXT_Frame;
@@ -295,11 +321,8 @@ int main(void) {
     	//USB_DeviceCdcAcmSend(handle, ep, buffer, length)
     	Decode();
     	workingmode();
-
-
-
-
-
+    	checkDeviceConnection();
+    	//checkFaults();
 
     	if(!timeoutUSB){
 			EnviarDatos(ALIVECMD);
@@ -398,10 +421,14 @@ void DecodeCANMessage(){
 		case ID_RFID_SENSOR: //cuando el mensaje que llego es del RFID
 			//LED_GREEN_TOGGLE();
 			DecodeRFIDSensor();
+			timeoutRFIDSensor = 200;
+			RFID_SENSOR_CONNECTED = 1;
 			break;
 		case ID_MAGNETIC_SENSOR: //Cuando el mensaje que llego es del SENSOR MAGNETICO
 			//LED_RED_TOGGLE();
 			DecodeMagneticSensor();
+			timeoutMagSensor = 200;
+			MAG_SENSOR_CONNECTED = 1;
 			break;
 		case ID_REC_BATERIA: //cuando la bateria manda algo
 			//ESCRIBO COSAS PARA CARGA DE BATERIA
@@ -437,6 +464,15 @@ void DecodeCANMessage(){
 				brakestatus++;
 			}
 		break;
+		case ID_MOTOR_SPEED_ALIVE:
+			timeoutMotorVel = 200;
+			MOTOR_VEL_CONNECTED = 1;
+		break;
+		case ID_MOTOR_DIRECTION_ALIVE:
+			timeoutMotorDir = 200;
+			MOTOR_DIR_CONNECTED = 1;
+		break;
+
 		default:
 			break;
 	}
@@ -813,6 +849,13 @@ void EnviarDatos(uint8_t cmd){
 				ringTx.buf[ringTx.iW++] = auxbufRX[var];
 			}
 		break;
+		case FAULT_CMD:
+			ringTx.buf[ringTx.iW++] = 0x03;
+			ringTx.buf[ringTx.iW++] = 0x00;
+			ringTx.buf[ringTx.iW++] = ':';
+			ringTx.buf[ringTx.iW++] = cmd;
+			ringTx.buf[ringTx.iW++] = flagFaults.byte;
+		break;
 		default:
 		break;
 	}
@@ -1125,6 +1168,21 @@ void PositionMotorControl(){
 	}
 }
 
+void checkDeviceConnection(){
+	if (MOTOR_VEL_CONNECTED & MOTOR_DIR_CONNECTED & MAG_SENSOR_CONNECTED & RFID_SENSOR_CONNECTED & HMI_CONNECTED){
+		ALL_DEVICES_CONNECTED = 1;
+	}
+	else{
+		ALL_DEVICES_CONNECTED = 0;
+		COMMUNICATION_FAULT = 1;
+		//ENVIAR COMANDO PARA ALERTA O FALLA EN PANTALLA
+	}
+}
+
+void CheckFaults(){
+	//algo
+}
+
 /* PIT0_IRQn interrupt handler */
 void PIT_CHANNEL_0_IRQHANDLER(void) {
   uint32_t intStatus;
@@ -1136,12 +1194,11 @@ void PIT_CHANNEL_0_IRQHANDLER(void) {
 
   if(timeoutUSB){
 	  timeoutUSB--;
-      }
+  }
 
   if(timeoutBAT){
 	  timeoutBAT--;
   }
-
 
   if(timeoutINIT){
 	  timeoutINIT--;
@@ -1159,6 +1216,36 @@ void PIT_CHANNEL_0_IRQHANDLER(void) {
 	  ringRx.timeout--;
 	  if(!ringRx.timeout)
 		  ringRx.header = 0;
+  }
+
+  if(timeoutMotorDir){
+	  timeoutMotorDir--;
+	  if(!timeoutMotorDir)
+		  MOTOR_DIR_CONNECTED = 0;
+  }
+
+  if(timeoutMotorVel){
+	  timeoutMotorVel--;
+	  if(!timeoutMotorVel)
+		  MOTOR_VEL_CONNECTED = 0;
+  }
+
+  if(timeoutMagSensor){
+  	  timeoutMagSensor--;
+  	  if(!timeoutMagSensor)
+  		  MAG_SENSOR_CONNECTED = 0;
+    }
+
+  if(timeoutRFIDSensor){
+	  timeoutRFIDSensor--;
+	  if(!timeoutRFIDSensor)
+		  RFID_SENSOR_CONNECTED = 0;
+  }
+
+  if(timeoutHMI){
+	  timeoutHMI--;
+	  if(!timeoutHMI)
+		  HMI_CONNECTED = 0;
   }
   /* Add for ARM errata 838869, affects Cortex-M4, Cortex-M4F
      Store immediate overlapping exception return operation might vector to incorrect interrupt. */
