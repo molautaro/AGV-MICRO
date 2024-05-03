@@ -18,14 +18,20 @@
 #define RX_MESSAGE_EXT_BUFFER_NUM 				(1)
 #define TX_MESSAGE_BUFFER_NUM					(2)
 #define TX_STD_MESSAGE_BUFFER_NUM 				(3)
-#define ID_RFID_SENSOR 							FLEXCAN_ID_STD(0x100)
-#define ID_MAGNETIC_SENSOR 						FLEXCAN_ID_STD(0x123)
+#define ID_RFID_SENSOR 							FLEXCAN_ID_STD(0x100) //ID SENSOR RFID
+#define ID_MAGNETIC_SENSOR 						FLEXCAN_ID_STD(0x123) //ID SENSOR MAGNETICO
 #define ID_SEND_BATERIA 						FLEXCAN_ID_EXT(0x1806E5F4)//ID de msjs enviados desde placa a la bateria
 #define ID_REC_BATERIA 							FLEXCAN_ID_EXT(0x18FF50E5)//ID de msjs que recibe la placa desde la bateria
-#define ID_REC_MOTOR_SPEED 						FLEXCAN_ID_STD(0x587)
-#define ID_REC_MOTOR_DIRECTION 					FLEXCAN_ID_STD(0x581)
-#define ID_MOTOR_SPEED_ALIVE 					FLEXCAN_ID_STD(0x707)
-#define ID_MOTOR_DIRECTION_ALIVE 				FLEXCAN_ID_STD(0x701)
+#define ID_REC_MOTOR_SPEED 						FLEXCAN_ID_STD(0x587) //ID RECEPCION SDO MOTOR VELOCIDAD
+#define ID_REC_MOTOR_DIRECTION 					FLEXCAN_ID_STD(0x581) //ID RECEPCION SDO MOTOR DIRECCION
+#define ID_MOTOR_SPEED_ALIVE 					FLEXCAN_ID_STD(0x707) //ID ALIVE MOTOR VELOCIDAD
+#define ID_MOTOR_DIRECTION_ALIVE 				FLEXCAN_ID_STD(0x701) //ID ALIVE MOTOR DIRECCION
+#define ID_MOTOR_SPEED_TPDO1					FLEXCAN_ID_STD(0x187) //ID TPDO1 MOTOR VELOCIDAD
+#define ID_MOTOR_DIR_TPDO1						FLEXCAN_ID_STD(0x181) //ID TPDO1 MOTOR DIRECCION
+#define ID_MOTOR_SPEED_RPDO1					FLEXCAN_ID_STD(0x207) //ID RPDO1 MOTOR VELOCIDAD
+#define ID_MOTOR_DIR_RPDO1						FLEXCAN_ID_STD(0x201) //ID RPDO1 MOTOR DIRECCION
+#define ID_MOTOR_SPEED_RPDO2					FLEXCAN_ID_STD(0x307) //ID RPDO2 MOTOR VELOCIDAD
+
 
 
 //Comandos recibidos de QT
@@ -33,7 +39,7 @@
 #define INITESPCMD 								0xC0 //Inicializar ESP
 #define MOTORSCMD 								0xD0 //comando motor
 #define TESTCMD 								0xD2 // COMANDO ON/OFF MOTOR
-#define ALIVECMD 								0xF0 // comando alive
+#define ALIVECMD 								0x0F // comando alive
 
 #define ENABLE_MOTOR_CMD 						0x01 //COMANDO ENABLE MOTOR
 #define DISABLE_MOTOR_CMD 						0x02 // COMANDO DISABLE MOTOR
@@ -48,7 +54,12 @@
 #define ACC_SPEED_CMD 							0xA6
 #define DEC_SPEED_CMD 							0xA7
 #define SPEED_POS_CMD 							0xA8
-#define FAULT_CMD								0xA9
+#define FAULT_CMD								0xF0
+#define MOTOR_SPEED_DATA1_CMD					0xB0
+#define MOTOR_SPEED_DATA2_CMD					0xB1
+#define MOTOR_DIR_DATA1_CMD						0xB2
+#define MOTOR_DIR_DATA2_CMD						0xB3
+//#define FAULT_CMD								0xB4
 
 const uint8_t CARGA_BAT_MESSAGE[] = 	{0x02, 0x48, 0x01, 0x2C, 0x00, 0x00, 0x00, 0x00};
 const uint8_t SPEED_MODE_MESSAGE[] = 	{0x07,0x2F,0x60,0x60,0x00,0x03,0x00,0x00,0x00};
@@ -162,11 +173,14 @@ int32_t direccion=0;
 //uint8_t msj_CAN_BAT2[8] = {0x00, 0x00, 0x00, 0x00, 0x0A, 0x0B, 0x0C, 0x0D};
 uint16_t magneticSensorBitStatus;
 uint16_t volt_bateria = 0;
+
 volatile _sFlag flag1, flag2, flagFaults,SensorsStatus, flagQT, flagQT_2;
 volatile _sWork RFIDData[2],DestinationStation[2],Distance_Sensor_SIMULATION;
 volatile _sWork SpeedMotorCalcRPM, SpeedMotorCalcRPMAUX,SpeedMotorCalcDEC;
 volatile _sWork PosSend;
 _sWork Kp_SteeringMotor, Kd_SteeringMotor, Ki_SteeringMotor;
+_sWork RealSpeedVEL,StatusWordVEL,RealCurrentVEL; //Variables para almacenar datos enviados del motor velocidad por TPDO1
+_sWork RealPositionDIR,StatusWordDIR,RealCurrentDIR; //Variables para almacenar datos enviados del motor direccion por TPDO1
 
 
 #define SENSORSTATUS_0 						SensorsStatus.bit.b0 //Estado Sensor 0
@@ -328,6 +342,7 @@ int main(void) {
 			EnviarDatos(ALIVECMD);
 			timeoutUSB = 400;
 		}
+    	//PONER TIMEOUT PARA ENVIAR DATOS A PANTALLA
     	if(flagQT.byte || flagQT_2.byte){ //maquina de estado para comandos recibidos de QT
 			ActionQT();
 		}
@@ -472,7 +487,26 @@ void DecodeCANMessage(){
 			timeoutMotorDir = 200;
 			MOTOR_DIR_CONNECTED = 1;
 		break;
-
+		case ID_MOTOR_SPEED_TPDO1: //datos tpdo1 del motor de velocidad
+			RealSpeedVEL.i8[0] = RX_STD_Frame.dataByte0;
+			RealSpeedVEL.i8[1] = RX_STD_Frame.dataByte1;
+			RealSpeedVEL.i8[2] = RX_STD_Frame.dataByte2;
+			RealSpeedVEL.i8[3] = RX_STD_Frame.dataByte3;
+			StatusWordVEL.u16[0] = RX_STD_Frame.dataByte4;
+			StatusWordVEL.u16[1] = RX_STD_Frame.dataByte5;
+			RealCurrentVEL.i16[0] = RX_STD_Frame.dataByte6;
+			RealCurrentVEL.i16[1] = RX_STD_Frame.dataByte7;
+		break;
+		case ID_MOTOR_DIR_TPDO1: //datos tpdo1 del motor de direccion
+		break;
+			RealPositionDIR.i8[0] = RX_STD_Frame.dataByte0;
+			RealPositionDIR.i8[1] = RX_STD_Frame.dataByte1;
+			RealPositionDIR.i8[2] = RX_STD_Frame.dataByte2;
+			RealPositionDIR.i8[3] = RX_STD_Frame.dataByte3;
+			StatusWordDIR.u16[0] = RX_STD_Frame.dataByte4;
+			StatusWordDIR.u16[1] = RX_STD_Frame.dataByte5;
+			RealCurrentDIR.i16[0] = RX_STD_Frame.dataByte6;
+			RealCurrentDIR.i16[1] = RX_STD_Frame.dataByte7;
 		default:
 			break;
 	}
@@ -855,6 +889,36 @@ void EnviarDatos(uint8_t cmd){
 			ringTx.buf[ringTx.iW++] = ':';
 			ringTx.buf[ringTx.iW++] = cmd;
 			ringTx.buf[ringTx.iW++] = flagFaults.byte;
+		break;
+		case MOTOR_SPEED_DATA1_CMD:
+			ringTx.buf[ringTx.iW++] = 0x0A;
+			ringTx.buf[ringTx.iW++] = 0x00;
+			ringTx.buf[ringTx.iW++] = ':';
+			ringTx.buf[ringTx.iW++] = cmd;
+			ringTx.buf[ringTx.iW++] = RealSpeedVEL.u8[0];
+			ringTx.buf[ringTx.iW++] = RealSpeedVEL.u8[1];
+			ringTx.buf[ringTx.iW++] = RealSpeedVEL.u8[2];
+			ringTx.buf[ringTx.iW++] = RealSpeedVEL.u8[3];
+			ringTx.buf[ringTx.iW++] = StatusWordVEL.u16[0];
+			ringTx.buf[ringTx.iW++] = StatusWordVEL.u16[1];
+			ringTx.buf[ringTx.iW++] = RealCurrentVEL.u16[0];
+			ringTx.buf[ringTx.iW++] = RealCurrentVEL.u16[1];
+		break;
+		case MOTOR_SPEED_DATA2_CMD:
+		break;
+		case MOTOR_DIR_DATA1_CMD:
+			ringTx.buf[ringTx.iW++] = 0x0A;
+			ringTx.buf[ringTx.iW++] = 0x00;
+			ringTx.buf[ringTx.iW++] = ':';
+			ringTx.buf[ringTx.iW++] = cmd;
+			ringTx.buf[ringTx.iW++] = RealPositionDIR.u8[0];
+			ringTx.buf[ringTx.iW++] = RealPositionDIR.u8[1];
+			ringTx.buf[ringTx.iW++] = RealPositionDIR.u8[2];
+			ringTx.buf[ringTx.iW++] = RealPositionDIR.u8[3];
+			ringTx.buf[ringTx.iW++] = StatusWordDIR.u16[0];
+			ringTx.buf[ringTx.iW++] = StatusWordDIR.u16[1];
+			ringTx.buf[ringTx.iW++] = RealCurrentDIR.u16[0];
+			ringTx.buf[ringTx.iW++] = RealCurrentDIR.u16[1];
 		break;
 		default:
 		break;
