@@ -192,7 +192,6 @@ void USB_DeviceInterface0CicVcomTask(void)
 				ringTx.iR += size;
 				/* Failure to send Data Handling code here */
 			}
-
 		}
         else{
         	if(s_sendSize > 0 && s_sendSize < 8){

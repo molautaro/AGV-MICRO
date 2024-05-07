@@ -36,7 +36,7 @@
 
 //Comandos recibidos de QT
 
-#define INITESPCMD 								0xC0 //Inicializar ESP
+//#define INITESPCMD 								0xC0 //Inicializar ESP
 #define MOTORSCMD 								0xD0 //comando motor
 #define TESTCMD 								0xD2 // COMANDO ON/OFF MOTOR
 #define ALIVECMD 								0x0F // comando alive
@@ -60,6 +60,8 @@
 #define MOTOR_DIR_DATA1_CMD						0xB2
 #define MOTOR_DIR_DATA2_CMD						0xB3
 //#define FAULT_CMD								0xB4
+#define PID_PARAMETERS_CMD						0xC0
+#define MAG_SENSOR_SIM_CMD						0xC1
 
 const uint8_t CARGA_BAT_MESSAGE[] = 	{0x02, 0x48, 0x01, 0x2C, 0x00, 0x00, 0x00, 0x00};
 const uint8_t SPEED_MODE_MESSAGE[] = 	{0x07,0x2F,0x60,0x60,0x00,0x03,0x00,0x00,0x00};
@@ -157,7 +159,7 @@ volatile uint32_t timerCounter;
 volatile _rx ringRx, auxRX;
 volatile _tx ringTx, auxTX;
 uint16_t timeoutMotorVel = 200, timeoutMotorDir = 200, timeoutMagSensor = 200, timeoutRFIDSensor = 200,timeoutHMI = 200;
-uint16_t timeoutUSB = 200;
+uint16_t timeoutUSB = 200, timeoutMOTOR_DATA_QT = 500;
 uint16_t timeoutBAT = 100, timeoutDIREC = 250;
 uint8_t rxBuf[256], txBuf[256], auxbufRX[256],auxbufTX[256], auxlenght;
 uint8_t operationMode = 0, init_comp = 3, timeoutINIT = 0,timeoutBRAKE=0, brakestatus=0;
@@ -339,8 +341,19 @@ int main(void) {
     	//checkFaults();
 
     	if(!timeoutUSB){
-			EnviarDatos(ALIVECMD);
+			//EnviarDatos(MOTOR_SPEED_DATA1_CMD);
+			//EnviarDatos(MOTOR_SPEED_DATA2_CMD);
+			//EnviarDatos(MOTOR_DIR_DATA1_CMD);
+			//EnviarDatos(MOTOR_DIR_DATA2_CMD);
 			timeoutUSB = 400;
+		}
+
+    	if(!timeoutMOTOR_DATA_QT){
+			EnviarDatos(MOTOR_SPEED_DATA1_CMD);
+			//EnviarDatos(MOTOR_SPEED_DATA2_CMD);
+			EnviarDatos(MOTOR_DIR_DATA1_CMD);
+			//EnviarDatos(MOTOR_DIR_DATA2_CMD);
+			timeoutMOTOR_DATA_QT = 50;
 		}
     	//PONER TIMEOUT PARA ENVIAR DATOS A PANTALLA
     	if(flagQT.byte || flagQT_2.byte){ //maquina de estado para comandos recibidos de QT
@@ -492,21 +505,21 @@ void DecodeCANMessage(){
 			RealSpeedVEL.i8[1] = RX_STD_Frame.dataByte1;
 			RealSpeedVEL.i8[2] = RX_STD_Frame.dataByte2;
 			RealSpeedVEL.i8[3] = RX_STD_Frame.dataByte3;
-			StatusWordVEL.u16[0] = RX_STD_Frame.dataByte4;
-			StatusWordVEL.u16[1] = RX_STD_Frame.dataByte5;
-			RealCurrentVEL.i16[0] = RX_STD_Frame.dataByte6;
-			RealCurrentVEL.i16[1] = RX_STD_Frame.dataByte7;
+			StatusWordVEL.u8[0] = RX_STD_Frame.dataByte4;
+			StatusWordVEL.u8[1] = RX_STD_Frame.dataByte5;
+			RealCurrentVEL.i8[0] = RX_STD_Frame.dataByte6;
+			RealCurrentVEL.i8[1] = RX_STD_Frame.dataByte7;
 		break;
 		case ID_MOTOR_DIR_TPDO1: //datos tpdo1 del motor de direccion
-		break;
 			RealPositionDIR.i8[0] = RX_STD_Frame.dataByte0;
 			RealPositionDIR.i8[1] = RX_STD_Frame.dataByte1;
 			RealPositionDIR.i8[2] = RX_STD_Frame.dataByte2;
 			RealPositionDIR.i8[3] = RX_STD_Frame.dataByte3;
-			StatusWordDIR.u16[0] = RX_STD_Frame.dataByte4;
-			StatusWordDIR.u16[1] = RX_STD_Frame.dataByte5;
-			RealCurrentDIR.i16[0] = RX_STD_Frame.dataByte6;
-			RealCurrentDIR.i16[1] = RX_STD_Frame.dataByte7;
+			StatusWordDIR.u8[0] = RX_STD_Frame.dataByte4;
+			StatusWordDIR.u8[1] = RX_STD_Frame.dataByte5;
+			RealCurrentDIR.i8[0] = RX_STD_Frame.dataByte6;
+			RealCurrentDIR.i8[1] = RX_STD_Frame.dataByte7;
+		break;
 		default:
 			break;
 	}
@@ -774,14 +787,14 @@ void RecibirDatos(uint8_t head){
 			Distance_Sensor_SIMULATION.u8[2]=auxbufRX[7];
 			Distance_Sensor_SIMULATION.u8[3]=auxbufRX[8];
 		break;
-		case 0xBF:
+		case MAG_SENSOR_SIM_CMD:
 			for (uint8_t var = 0; var < 9; var++) {
 				auxbufRX[var]=ringRx.buf[head++];
 			}
 			//magneticSensorBitStatus = ((uint16_t)auxbufRX[7] << 8) | auxbufRX[8];
 			DecodeMagneticSensor();
 		break;
-		case 0xCF:
+		case PID_PARAMETERS_CMD:
 			for (uint8_t var = 0; var < 9; var++) {
 				auxbufRX[var]=ringRx.buf[head++];
 			}
@@ -899,10 +912,10 @@ void EnviarDatos(uint8_t cmd){
 			ringTx.buf[ringTx.iW++] = RealSpeedVEL.u8[1];
 			ringTx.buf[ringTx.iW++] = RealSpeedVEL.u8[2];
 			ringTx.buf[ringTx.iW++] = RealSpeedVEL.u8[3];
-			ringTx.buf[ringTx.iW++] = StatusWordVEL.u16[0];
-			ringTx.buf[ringTx.iW++] = StatusWordVEL.u16[1];
-			ringTx.buf[ringTx.iW++] = RealCurrentVEL.u16[0];
-			ringTx.buf[ringTx.iW++] = RealCurrentVEL.u16[1];
+			ringTx.buf[ringTx.iW++] = StatusWordVEL.u8[0];
+			ringTx.buf[ringTx.iW++] = StatusWordVEL.u8[1];
+			ringTx.buf[ringTx.iW++] = RealCurrentVEL.u8[0];
+			ringTx.buf[ringTx.iW++] = RealCurrentVEL.u8[1];
 		break;
 		case MOTOR_SPEED_DATA2_CMD:
 		break;
@@ -915,10 +928,10 @@ void EnviarDatos(uint8_t cmd){
 			ringTx.buf[ringTx.iW++] = RealPositionDIR.u8[1];
 			ringTx.buf[ringTx.iW++] = RealPositionDIR.u8[2];
 			ringTx.buf[ringTx.iW++] = RealPositionDIR.u8[3];
-			ringTx.buf[ringTx.iW++] = StatusWordDIR.u16[0];
-			ringTx.buf[ringTx.iW++] = StatusWordDIR.u16[1];
-			ringTx.buf[ringTx.iW++] = RealCurrentDIR.u16[0];
-			ringTx.buf[ringTx.iW++] = RealCurrentDIR.u16[1];
+			ringTx.buf[ringTx.iW++] = StatusWordDIR.u8[0];
+			ringTx.buf[ringTx.iW++] = StatusWordDIR.u8[1];
+			ringTx.buf[ringTx.iW++] = RealCurrentDIR.u8[0];
+			ringTx.buf[ringTx.iW++] = RealCurrentDIR.u8[1];
 		break;
 		default:
 		break;
@@ -1311,6 +1324,10 @@ void PIT_CHANNEL_0_IRQHANDLER(void) {
 	  if(!timeoutHMI)
 		  HMI_CONNECTED = 0;
   }
+
+  if(timeoutMOTOR_DATA_QT){
+	  timeoutMOTOR_DATA_QT--;
+    }
   /* Add for ARM errata 838869, affects Cortex-M4, Cortex-M4F
      Store immediate overlapping exception return operation might vector to incorrect interrupt. */
   #if defined __CORTEX_M && (__CORTEX_M == 4U)
