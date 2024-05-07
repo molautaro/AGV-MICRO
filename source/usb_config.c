@@ -162,7 +162,7 @@ uint16_t timeoutMotorVel = 200, timeoutMotorDir = 200, timeoutMagSensor = 200, t
 uint16_t timeoutUSB = 200, timeoutMOTOR_DATA_QT = 500;
 uint16_t timeoutBAT = 100, timeoutDIREC = 250;
 uint8_t rxBuf[256], txBuf[256], auxbufRX[256],auxbufTX[256], auxlenght;
-uint8_t operationMode = 0, init_comp = 3, timeoutINIT = 0,timeoutBRAKE=0, brakestatus=0;
+uint8_t operationMode = 0, init_comp = 0, timeoutINIT = 0,timeoutBRAKE=0, brakestatus=0;
 
 uint16_t COORD_SENSORES[8];
 const int SENS_MODEL_EXAC[] = {-7,-6,-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7};
@@ -326,7 +326,7 @@ int main(void) {
 	Distance_Sensor_SIMULATION.f = 2.0;
 	SpeedMotorCalcRPM.f = 0.0;
 	SpeedMotorCalcRPMAUX.f = 0.0;
-	operationMode = 1;
+	operationMode = 0;
 
 	Kp_SteeringMotor.u32 = 0;
 	Kd_SteeringMotor.u32 = 0;
@@ -432,12 +432,12 @@ void workingmode(){
 		/* poner aqui lo que iria en el buffer*/
 	break;
 	case 1://MODO MANUAL
-		SpeedMotorControl(); //funcion control velocidad
-		SteeringMotorControl(); //funcion control direccion
+		//SpeedMotorControl(); //funcion control velocidad
+		//SteeringMotorControl(); //funcion control direccion
 	break;
 	case 2:
 		if(!timeoutBRAKE || READY_RECIVE){
-			BrakeControl();//funcion de frenado.
+			//BrakeControl();//funcion de frenado.
 		}
 
 	break;
@@ -472,8 +472,6 @@ void DecodeCANMessage(){
 			LED_GREEN_TOGGLE();
 			if(operationMode==0){
 				init_comp++;
-//				if (init_comp == 3)
-//					operationMode = 1;
 			}
 			if(operationMode==2){
 				brakestatus++;
