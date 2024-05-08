@@ -77,8 +77,8 @@ const uint8_t READY_POS[] = 			{0x01,0x2B,0x40,0x60,0x00,0x3F,0x10,0x00,0x00};
 const uint8_t INVERTIR_1[] = 			{0x07,0x2F,0x60,0x7E,0x00,0x01,0x00,0x00,0x00};
 const uint8_t INVERTIR_2[] = 			{0x07,0x2F,0x60,0x7E,0x00,0x00,0x00,0x00,0x00};
 
-const uint8_t START_PDO_SPEED_MESSAGE[] = 			{0x00,0x01,0x07,0x00,0x00,0x00,0x00,0x00,0x00};
-const uint8_t START_PDO_DIR_MESSAGE[] = 			{0x00,0x01,0x01,0x00,0x00,0x00,0x00,0x00,0x00};
+const uint8_t START_PDO_SPEED_MESSAGE[] = 			{0x00,0x01,0x07};
+const uint8_t START_PDO_DIR_MESSAGE[] = 			{0x00,0x01,0x01};
 
 //const uint8_t TARGET_SPEED[] = {0x07,0x23,0xFF,0x60,0x00,X,X,X,X};
 //const uint8_t TARGET_POS[] = {0x01,0x23,0x7A,0x60,0x00,X,X,X,X};
@@ -99,6 +99,7 @@ const uint8_t POS_SPEED[] = {0x01,0x23,0x81,0x60,0x00,0xBC,0xBB,0xBB,0x03};//300
 #define REMOTE_STD 0x1A
 #define DATA_EXT 0x2B
 #define REMOTE_EXT 0x3B
+#define PDO 0x4B
 
 //para CreateCANMessage(msj);
 //#define ENABLE_MOTOR_CAN 0x02
@@ -333,6 +334,7 @@ int main(void) {
 	SpeedMotorCalcRPM.f = 0.0;
 	SpeedMotorCalcRPMAUX.f = 0.0;
 	operationMode = 0;
+	init_comp = 4;
 
 	Kp_SteeringMotor.u32 = 0;
 	Kd_SteeringMotor.u32 = 0;
@@ -406,26 +408,26 @@ void workingmode(){
 			break;
 			case 3:
 				for (uint8_t var = 0; var < 9; var++) {
+					auxbufRX[var]=START_PDO_SPEED_MESSAGE[var];
+				}
+				CreateCANMessage(START_PDO_SPEED_CMD);
+
+			break;
+			case 4:
+				for (uint8_t var = 0; var < 9; var++) {
 					auxbufRX[var]=POS_MODE_MESSAGE[var];
 				}
 				CreateCANMessage(POSITION_MODE_CMD);
 			break;
-			case 4:
+			case 5:
 				for (uint8_t var = 0; var < 9; var++) {
 					auxbufRX[var]=POS_SPEED[var];
 				}
 				CreateCANMessage(SPEED_POS_CMD);
 			break;
 			}
-			case 5:
-				for (uint8_t var = 0; var < 9; var++) {
-					auxbufRX[var]=START_PDO_SPEED_MESSAGE[var];
-				}
-				CreateCANMessage(START_PDO_SPEED_CMD);
-
-			break;
 			case 6:
-				for (uint8_t var = 0; var < 9; var++) {
+				for (uint8_t var = 0; var < 3; var++) {
 					auxbufRX[var]=START_PDO_DIR_MESSAGE[var];
 				}
 				CreateCANMessage(START_PDO_DIR_CMD);
@@ -530,6 +532,7 @@ void DecodeCANMessage(){
 			StatusWordVEL.u8[1] = RX_STD_Frame.dataByte5;
 			RealCurrentVEL.i8[0] = RX_STD_Frame.dataByte6;
 			RealCurrentVEL.i8[1] = RX_STD_Frame.dataByte7;
+			READY_RECIVE = 1;
 			if(operationMode == 0){
 				init_comp++;
 			}
@@ -544,10 +547,13 @@ void DecodeCANMessage(){
 			StatusWordDIR.u8[1] = RX_STD_Frame.dataByte5;
 			RealCurrentDIR.i8[0] = RX_STD_Frame.dataByte6;
 			RealCurrentDIR.i8[1] = RX_STD_Frame.dataByte7;
-			if(operationMode == 0){
+			READY_RECIVE = 1;
+			if(operationMode == 0 && init_comp == 6){
 				init_comp++;
-				 if(init_comp == 7)
+				 if(init_comp == 7){
+					 LED_GREEN_TOGGLE();
 					 operationMode = 1;
+				 }
 			}
 		break;
 		default:
@@ -1024,10 +1030,10 @@ void CreateCANMessage(uint8_t msj){
 			ChargeToCANBuf(DATA_STD, auxbufRX, FLEXCAN_ID_STD(auxbufRX[0] + 0x600));
 		break;
 		case START_PDO_SPEED_CMD:
-			ChargeToCANBuf(DATA_STD, auxbufRX, FLEXCAN_ID_STD(auxbufRX[0]));
+			ChargeToCANBuf(PDO, auxbufRX, FLEXCAN_ID_STD(auxbufRX[0]));
 		break;
 		case START_PDO_DIR_CMD:
-			ChargeToCANBuf(DATA_STD, auxbufRX, FLEXCAN_ID_STD(auxbufRX[0]));
+			ChargeToCANBuf(PDO, auxbufRX, FLEXCAN_ID_STD(auxbufRX[0]));
 		break;
 	}
 	FLEXCAN_TransferSendNonBlocking(CAN0, &flexcanHandle, &TX_CAN_BUF);
@@ -1036,6 +1042,16 @@ void CreateCANMessage(uint8_t msj){
 }
 
 void ChargeToCANBuf(uint8_t whatFormat, uint8_t payloadCAN[], uint32_t id){
+
+	txFrame.dataByte0 = 0;
+	txFrame.dataByte1 = 0;
+	txFrame.dataByte2 = 0;
+	txFrame.dataByte3 = 0;
+	txFrame.dataByte4 = 0;
+	txFrame.dataByte5 = 0;
+	txFrame.dataByte6 = 0;
+	txFrame.dataByte7 = 0;
+
 	switch(whatFormat){
 	case DATA_EXT:
 		txFrame.type = kFLEXCAN_FrameTypeData;
@@ -1066,6 +1082,13 @@ void ChargeToCANBuf(uint8_t whatFormat, uint8_t payloadCAN[], uint32_t id){
 	case REMOTE_EXT:
 	break;
 	case REMOTE_STD:
+	break;
+	case PDO:
+	    txFrame.type = kFLEXCAN_FrameTypeData;
+		txFrame.format = kFLEXCAN_FrameFormatStandard;
+		txFrame.id = id;
+		txFrame.dataByte0 = payloadCAN[1];
+		txFrame.dataByte1 = payloadCAN[2];
 	break;
 	}
 }
