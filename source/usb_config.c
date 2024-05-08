@@ -62,6 +62,9 @@
 //#define FAULT_CMD								0xB4
 #define PID_PARAMETERS_CMD						0xC0
 #define MAG_SENSOR_SIM_CMD						0xC1
+#define CHANGE_CONTROL_CMD						0xD8
+#define START_PDO_SPEED_CMD						0xD0
+#define START_PDO_DIR_CMD						0xD1
 
 const uint8_t CARGA_BAT_MESSAGE[] = 	{0x02, 0x48, 0x01, 0x2C, 0x00, 0x00, 0x00, 0x00};
 const uint8_t SPEED_MODE_MESSAGE[] = 	{0x07,0x2F,0x60,0x60,0x00,0x03,0x00,0x00,0x00};
@@ -73,6 +76,9 @@ const uint8_t DISABLE_MPOS[] = 			{0x01,0x2B,0x40,0x60,0x00,0x06,0x00,0x00,0x00}
 const uint8_t READY_POS[] = 			{0x01,0x2B,0x40,0x60,0x00,0x3F,0x10,0x00,0x00};
 const uint8_t INVERTIR_1[] = 			{0x07,0x2F,0x60,0x7E,0x00,0x01,0x00,0x00,0x00};
 const uint8_t INVERTIR_2[] = 			{0x07,0x2F,0x60,0x7E,0x00,0x00,0x00,0x00,0x00};
+
+const uint8_t START_PDO_SPEED_MESSAGE[] = 			{0x00,0x01,0x07,0x00,0x00,0x00,0x00,0x00,0x00};
+const uint8_t START_PDO_DIR_MESSAGE[] = 			{0x00,0x01,0x01,0x00,0x00,0x00,0x00,0x00,0x00};
 
 //const uint8_t TARGET_SPEED[] = {0x07,0x23,0xFF,0x60,0x00,X,X,X,X};
 //const uint8_t TARGET_POS[] = {0x01,0x23,0x7A,0x60,0x00,X,X,X,X};
@@ -411,6 +417,19 @@ void workingmode(){
 				CreateCANMessage(SPEED_POS_CMD);
 			break;
 			}
+			case 5:
+				for (uint8_t var = 0; var < 9; var++) {
+					auxbufRX[var]=START_PDO_SPEED_MESSAGE[var];
+				}
+				CreateCANMessage(START_PDO_SPEED_CMD);
+
+			break;
+			case 6:
+				for (uint8_t var = 0; var < 9; var++) {
+					auxbufRX[var]=START_PDO_DIR_MESSAGE[var];
+				}
+				CreateCANMessage(START_PDO_DIR_CMD);
+			break;
 			timeoutINIT = 50;
 		}
 //		if(!FIRST_INIT){
@@ -431,13 +450,15 @@ void workingmode(){
 		//ChargeToCANBuf(DATA_STD, auxbufRX, MOTORS);
 		/* poner aqui lo que iria en el buffer*/
 	break;
-	case 1://MODO MANUAL
-		//SpeedMotorControl(); //funcion control velocidad
-		//SteeringMotorControl(); //funcion control direccion
+	case 1:
 	break;
-	case 2:
+	case 2://MODO MANUAL
+		SpeedMotorControl(); //funcion control velocidad
+		SteeringMotorControl(); //funcion control direccion
+	break;
+	case 3:
 		if(!timeoutBRAKE || READY_RECIVE){
-			//BrakeControl();//funcion de frenado.
+			BrakeControl();//funcion de frenado.
 		}
 
 	break;
@@ -472,6 +493,8 @@ void DecodeCANMessage(){
 			LED_GREEN_TOGGLE();
 			if(operationMode==0){
 				init_comp++;
+//				if (init_comp == 3)
+//					operationMode = 1;
 			}
 			if(operationMode==2){
 				brakestatus++;
@@ -483,8 +506,8 @@ void DecodeCANMessage(){
 			if(operationMode==0){
 				init_comp++;
 				//FIRST_INIT=0;
-				if (init_comp == 5)
-					operationMode = 1;
+//				if (init_comp == 5)
+//					operationMode = 1;
 			}
 			if(operationMode==2){
 				brakestatus++;
@@ -507,6 +530,10 @@ void DecodeCANMessage(){
 			StatusWordVEL.u8[1] = RX_STD_Frame.dataByte5;
 			RealCurrentVEL.i8[0] = RX_STD_Frame.dataByte6;
 			RealCurrentVEL.i8[1] = RX_STD_Frame.dataByte7;
+			if(operationMode == 0){
+				init_comp++;
+			}
+
 		break;
 		case ID_MOTOR_DIR_TPDO1: //datos tpdo1 del motor de direccion
 			RealPositionDIR.i8[0] = RX_STD_Frame.dataByte0;
@@ -517,6 +544,11 @@ void DecodeCANMessage(){
 			StatusWordDIR.u8[1] = RX_STD_Frame.dataByte5;
 			RealCurrentDIR.i8[0] = RX_STD_Frame.dataByte6;
 			RealCurrentDIR.i8[1] = RX_STD_Frame.dataByte7;
+			if(operationMode == 0){
+				init_comp++;
+				 if(init_comp == 7)
+					 operationMode = 1;
+			}
 		break;
 		default:
 			break;
@@ -805,6 +837,14 @@ void RecibirDatos(uint8_t head){
 			Kd_SteeringMotor.u8[2]=auxbufRX[7];
 			Kd_SteeringMotor.u8[3]=auxbufRX[8];
 		break;
+		case CHANGE_CONTROL_CMD:
+			if(operationMode == 1){
+				operationMode = 2;
+			}
+			else if (operationMode == 2) {
+				operationMode = 1;
+			}
+			break;
 		default:
 			//LED_RED_TOGGLE();
 		break;
@@ -812,7 +852,6 @@ void RecibirDatos(uint8_t head){
 	LED_RED_TOGGLE();
 	EnviarDatos(TESTCMD);
 }
-
 
 void UpdateChecksum()
 {
@@ -983,6 +1022,12 @@ void CreateCANMessage(uint8_t msj){
 		break;
 		case SPEED_POS_CMD:
 			ChargeToCANBuf(DATA_STD, auxbufRX, FLEXCAN_ID_STD(auxbufRX[0] + 0x600));
+		break;
+		case START_PDO_SPEED_CMD:
+			ChargeToCANBuf(DATA_STD, auxbufRX, FLEXCAN_ID_STD(auxbufRX[0]));
+		break;
+		case START_PDO_DIR_CMD:
+			ChargeToCANBuf(DATA_STD, auxbufRX, FLEXCAN_ID_STD(auxbufRX[0]));
 		break;
 	}
 	FLEXCAN_TransferSendNonBlocking(CAN0, &flexcanHandle, &TX_CAN_BUF);
