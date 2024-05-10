@@ -55,6 +55,7 @@
 #define DEC_SPEED_CMD 							0xA7
 #define SPEED_POS_CMD 							0xA8
 #define FAULT_CMD								0xF0
+#define RESET_PROGRAM							0xA9
 #define MOTOR_SPEED_DATA1_CMD					0xB0
 #define MOTOR_SPEED_DATA2_CMD					0xB1
 #define MOTOR_DIR_DATA1_CMD						0xB2
@@ -166,7 +167,7 @@ volatile uint32_t timerCounter;
 volatile _rx ringRx, auxRX;
 volatile _tx ringTx, auxTX;
 uint16_t timeoutMotorVel = 200, timeoutMotorDir = 200, timeoutMagSensor = 200, timeoutRFIDSensor = 200,timeoutHMI = 200;
-uint16_t timeoutUSB = 200, timeoutMOTOR_DATA_QT = 500;
+uint16_t timeoutUSB = 200, timeoutMOTOR_DATA_QT = 500, timeoutCAN_MESSAGE=5;
 uint16_t timeoutBAT = 100, timeoutDIREC = 250;
 uint8_t rxBuf[256], txBuf[256], auxbufRX[256],auxbufTX[256], auxlenght;
 uint8_t operationMode = 0, init_comp = 0, timeoutINIT = 0,timeoutBRAKE=0, brakestatus=0;
@@ -407,11 +408,10 @@ void workingmode(){
 				CreateCANMessage(DEC_SPEED_CMD);
 			break;
 			case 3:
-				for (uint8_t var = 0; var < 9; var++) {
+				for (uint8_t var = 0; var < 3; var++) {
 					auxbufRX[var]=START_PDO_SPEED_MESSAGE[var];
 				}
 				CreateCANMessage(START_PDO_SPEED_CMD);
-
 			break;
 			case 4:
 				for (uint8_t var = 0; var < 9; var++) {
@@ -843,6 +843,11 @@ void RecibirDatos(uint8_t head){
 			Kd_SteeringMotor.u8[2]=auxbufRX[7];
 			Kd_SteeringMotor.u8[3]=auxbufRX[8];
 		break;
+		case RESET_PROGRAM: //reset programa
+			operationMode = 0;
+			init_comp = 0;
+			READY_RECIVE = 1;
+		break;
 		case CHANGE_CONTROL_CMD:
 			if(operationMode == 1){
 				operationMode = 2;
@@ -1038,6 +1043,7 @@ void CreateCANMessage(uint8_t msj){
 	}
 	FLEXCAN_TransferSendNonBlocking(CAN0, &flexcanHandle, &TX_CAN_BUF);
 	READY_RECIVE=0;
+	timeoutCAN_MESSAGE=5;
 	}
 }
 
@@ -1345,6 +1351,9 @@ void PIT_CHANNEL_0_IRQHANDLER(void) {
 
   if(timeoutINIT){
 	  timeoutINIT--;
+	  if(!timeoutINIT){
+		  READY_RECIVE=1;
+	  }
    }
 
   if(timeoutDIREC){
@@ -1394,6 +1403,12 @@ void PIT_CHANNEL_0_IRQHANDLER(void) {
   if(timeoutMOTOR_DATA_QT){
 	  timeoutMOTOR_DATA_QT--;
     }
+  if(timeoutCAN_MESSAGE){
+	  timeoutCAN_MESSAGE--;
+	  if(!timeoutCAN_MESSAGE){
+		  READY_RECIVE = 1;
+	  }
+  }
   /* Add for ARM errata 838869, affects Cortex-M4, Cortex-M4F
      Store immediate overlapping exception return operation might vector to incorrect interrupt. */
   #if defined __CORTEX_M && (__CORTEX_M == 4U)
