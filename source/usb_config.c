@@ -54,6 +54,8 @@
 #define ACC_SPEED_CMD 							0xA6
 #define DEC_SPEED_CMD 							0xA7
 #define SPEED_POS_CMD 							0xA8
+#define DISTANCE_SENSOR_CMD						0xA9
+#define DISTANCE_SENSOR_SIM_CMD					0xAF
 #define FAULT_CMD								0xF0
 #define RESET_PROGRAM							0xA9
 #define MOTOR_SPEED_DATA1_CMD					0xB0
@@ -66,6 +68,8 @@
 #define CHANGE_CONTROL_CMD						0xD8
 #define START_PDO_SPEED_CMD						0xD0
 #define START_PDO_DIR_CMD						0xD1
+#define HMI_ALIVE_CMD							0xD2
+#define RESET_PROGRAM_CMD						0xD3
 
 const uint8_t CARGA_BAT_MESSAGE[] = 	{0x02, 0x48, 0x01, 0x2C, 0x00, 0x00, 0x00, 0x00};
 const uint8_t SPEED_MODE_MESSAGE[] = 	{0x07,0x2F,0x60,0x60,0x00,0x03,0x00,0x00,0x00};
@@ -185,7 +189,7 @@ uint16_t magneticSensorBitStatus;
 uint16_t volt_bateria = 0;
 
 volatile _sFlag flag1, flag2, flagFaults,SensorsStatus, flagQT, flagQT_2;
-volatile _sWork RFIDData[2],DestinationStation[2],Distance_Sensor_SIMULATION;
+volatile _sWork RFIDData[2],DestinationStation[2],Distance_Sensor_SIMULATION,Distance_Sensor_REAL;
 volatile _sWork SpeedMotorCalcRPM, SpeedMotorCalcRPMAUX,SpeedMotorCalcDEC;
 volatile _sWork PosSend;
 _sWork Kp_SteeringMotor, Kd_SteeringMotor, Ki_SteeringMotor;
@@ -755,10 +759,10 @@ void RecibirDatos(uint8_t head){
 	//volatile uint8_t tempARRAY[10];
 //	cmdaux222 = ringRx.buf[head];
 	switch (ringRx.buf[head++]){
-		case 0xD2:
-			ALIVE_RECIVE_CMD = 1;
-			//algo
-		break;
+//		case 0xD2:
+//			ALIVE_RECIVE_CMD = 1;
+//			//algo
+//		break;
 		case ENABLE_MOTOR_CMD:
 			ENABLE_RECIVE_CMD = 1;
 			for (uint8_t var = 0; var < 9; var++) {
@@ -814,7 +818,16 @@ void RecibirDatos(uint8_t head){
 				auxbufRX[var]=ringRx.buf[head++];
 			}
 		break;
-		case 0xAF:
+		case DISTANCE_SENSOR_CMD:
+			for (uint8_t var = 0; var < 9; var++) {
+				auxbufRX[var]=ringRx.buf[head++];
+			}
+			Distance_Sensor_REAL.u8[0]=auxbufRX[5];
+			Distance_Sensor_REAL.u8[1]=auxbufRX[6];
+			Distance_Sensor_REAL.u8[2]=auxbufRX[7];
+			Distance_Sensor_REAL.u8[3]=auxbufRX[8];
+		break;
+		case DISTANCE_SENSOR_SIM_CMD:
 			for (uint8_t var = 0; var < 9; var++) {
 				auxbufRX[var]=ringRx.buf[head++];
 			}
@@ -843,7 +856,7 @@ void RecibirDatos(uint8_t head){
 			Kd_SteeringMotor.u8[2]=auxbufRX[7];
 			Kd_SteeringMotor.u8[3]=auxbufRX[8];
 		break;
-		case RESET_PROGRAM: //reset programa
+		case RESET_PROGRAM_CMD: //reset programa
 			operationMode = 0;
 			init_comp = 0;
 			READY_RECIVE = 1;
@@ -855,7 +868,12 @@ void RecibirDatos(uint8_t head){
 			else if (operationMode == 2) {
 				operationMode = 1;
 			}
-			break;
+		break;
+		case HMI_ALIVE_CMD:
+			ALIVE_RECIVE_CMD = 1;
+			timeoutHMI = 50;
+			HMI_CONNECTED = 1;
+		break;
 		default:
 			//LED_RED_TOGGLE();
 		break;
@@ -1108,7 +1126,7 @@ void ActionQT(){
 	}
 	if (ENABLE_RECIVE_CMD) {
 		ENABLE_RECIVE_CMD = 0;
-		LED_BLUE_TOGGLE();
+		//LED_BLUE_TOGGLE();
 		EnviarDatos(ENABLE_MOTOR_CMD);
 		CreateCANMessage(ENABLE_MOTOR_CMD);
 		return;
@@ -1206,7 +1224,7 @@ void BrakeControl(){
 }
 
 void SpeedMotorControl(){
-	SpeedMotorCalcRPMAUX.f = speedControlCalc(Distance_Sensor_SIMULATION.f, 3000);
+	SpeedMotorCalcRPMAUX.f = speedControlCalc(Distance_Sensor_REAL.f, 3000);
 	if(fabs(SpeedMotorCalcRPM.f-SpeedMotorCalcRPMAUX.f) >= 50){
 		//cambiar velocidad porque el cambio es de mas de 50rpm
 		SpeedMotorCalcRPM.f = SpeedMotorCalcRPMAUX.f;
@@ -1223,6 +1241,24 @@ void SpeedMotorControl(){
 		CreateCANMessage(SPEED_MOTOR_CMD);
 		//READY_RECIVE=1;
 	}
+// ESTO ES PARA SIMULACION
+//	SpeedMotorCalcRPMAUX.f = speedControlCalc(Distance_Sensor_SIMULATION.f, 3000);
+//	if(fabs(SpeedMotorCalcRPM.f-SpeedMotorCalcRPMAUX.f) >= 50){
+//		//cambiar velocidad porque el cambio es de mas de 50rpm
+//		SpeedMotorCalcRPM.f = SpeedMotorCalcRPMAUX.f;
+//		SpeedMotorCalcDEC.i32 = speedConvertionRPMtoDEC(SpeedMotorCalcRPM.f);
+//		auxbufRX[0] = 0x07; //id motor
+//		auxbufRX[1] = 0x23;
+//		auxbufRX[2] = 0xFF;
+//		auxbufRX[3] = 0x60;
+//		auxbufRX[4] = 0x00;
+//		auxbufRX[5] = SpeedMotorCalcDEC.u8[0];
+//		auxbufRX[6] = SpeedMotorCalcDEC.u8[1];
+//		auxbufRX[7] = SpeedMotorCalcDEC.u8[2];
+//		auxbufRX[8] = SpeedMotorCalcDEC.u8[3];
+//		CreateCANMessage(SPEED_MOTOR_CMD);
+//		//READY_RECIVE=1;
+//	}
 }
 
 uint32_t speedConvertionRPMtoDEC(float rpmSpeed){
