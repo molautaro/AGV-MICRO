@@ -819,13 +819,17 @@ void RecibirDatos(uint8_t head){
 			}
 		break;
 		case DISTANCE_SENSOR_CMD:
-			for (uint8_t var = 0; var < 9; var++) {
-				auxbufRX[var]=ringRx.buf[head++];
-			}
-			Distance_Sensor_REAL.u8[0]=auxbufRX[5];
-			Distance_Sensor_REAL.u8[1]=auxbufRX[6];
-			Distance_Sensor_REAL.u8[2]=auxbufRX[7];
-			Distance_Sensor_REAL.u8[3]=auxbufRX[8];
+			ringRx.buf[head++];
+			ringRx.buf[head++];
+			ringRx.buf[head++];
+			ringRx.buf[head++];
+			ringRx.buf[head++];
+			Distance_Sensor_REAL.u8[0]=ringRx.buf[head++];
+			Distance_Sensor_REAL.u8[1]=ringRx.buf[head++];
+			Distance_Sensor_REAL.u8[2]=ringRx.buf[head++];
+			Distance_Sensor_REAL.u8[3]=ringRx.buf[head++];
+			LED_BLUE_TOGGLE();
+			Distance_Sensor_REAL.f;
 		break;
 		case DISTANCE_SENSOR_SIM_CMD:
 			for (uint8_t var = 0; var < 9; var++) {
