@@ -65,11 +65,14 @@
 //#define FAULT_CMD								0xB4
 #define PID_PARAMETERS_CMD						0xC0
 #define MAG_SENSOR_SIM_CMD						0xC1
-#define CHANGE_CONTROL_CMD						0xD8
 #define START_PDO_SPEED_CMD						0xD0
 #define START_PDO_DIR_CMD						0xD1
 #define HMI_ALIVE_CMD							0xD2
 #define RESET_PROGRAM_CMD						0xD3
+#define DESTINATIONSTATION_CMD					0xD4
+#define DESTINOALCANZADO_CMD					0xD5
+#define ORIGENALCANZADO_CMD						0xD6
+#define CHANGE_CONTROL_CMD						0xD8
 
 const uint8_t CARGA_BAT_MESSAGE[] = 	{0x02, 0x48, 0x01, 0x2C, 0x00, 0x00, 0x00, 0x00};
 const uint8_t SPEED_MODE_MESSAGE[] = 	{0x07,0x2F,0x60,0x60,0x00,0x03,0x00,0x00,0x00};
@@ -333,8 +336,9 @@ int main(void) {
     /* Force the counter to be placed into memory. */
     volatile static int i = 0 ;
     /* Enter an infinite loop, just incrementing a counter. */
-    DestinationStation[0].u8[0]= 0x45;
-	DestinationStation[0].u8[1]= 0x31;
+    //DestinationStation[0].u8[0]= 0x45;
+	//DestinationStation[0].u8[1]= 0x31;
+    DestinationStation[0].u32 = 0;
 	Distance_Sensor_SIMULATION.f = 2.0;
 	SpeedMotorCalcRPM.f = 0.0;
 	SpeedMotorCalcRPMAUX.f = 0.0;
@@ -458,9 +462,9 @@ void workingmode(){
 	break;
 	case 1:
 	break;
-	case 2://MODO MANUAL
-		SpeedMotorControl(); //funcion control velocidad
-		SteeringMotorControl(); //funcion control direccion
+	case 2://MODO AUTOMATICO
+//		SpeedMotorControl(); //funcion control velocidad
+//		SteeringMotorControl(); //funcion control direccion
 	break;
 	case 3:
 		if(!timeoutBRAKE || READY_RECIVE){
@@ -632,8 +636,15 @@ void DecodeRFIDSensor(){
 
 	if (RFIDData[0].u16[0]==DestinationStation[0].u16[0]){
 		LED_GREEN_TOGGLE();//LLEGO A DESTINO
-		operationMode = 2;
-		brakestatus=0;
+		//operationMode = 2; ENTRA EN MODO FRENADO
+		//brakestatus=0;
+		if(DestinationStation[0].u16[0] == 0x4530){
+			EnviarDatos(ORIGENALCANZADO_CMD);
+		}
+		else{
+			EnviarDatos(DESTINOALCANZADO_CMD);
+		}
+
 	}
 	else{
 		LED_RED_TOGGLE();//NO LLEGO A DESTINO
@@ -819,16 +830,12 @@ void RecibirDatos(uint8_t head){
 			}
 		break;
 		case DISTANCE_SENSOR_CMD:
-			ringRx.buf[head++];
-			ringRx.buf[head++];
-			ringRx.buf[head++];
-			ringRx.buf[head++];
-			ringRx.buf[head++];
+			head+=5;
 			Distance_Sensor_REAL.u8[0]=ringRx.buf[head++];
 			Distance_Sensor_REAL.u8[1]=ringRx.buf[head++];
 			Distance_Sensor_REAL.u8[2]=ringRx.buf[head++];
 			Distance_Sensor_REAL.u8[3]=ringRx.buf[head++];
-			LED_BLUE_TOGGLE();
+			//LED_BLUE_TOGGLE();
 			Distance_Sensor_REAL.f;
 		break;
 		case DISTANCE_SENSOR_SIM_CMD:
@@ -847,6 +854,7 @@ void RecibirDatos(uint8_t head){
 			//magneticSensorBitStatus = ((uint16_t)auxbufRX[7] << 8) | auxbufRX[8];
 			DecodeMagneticSensor();
 		break;
+
 		case PID_PARAMETERS_CMD:
 			for (uint8_t var = 0; var < 9; var++) {
 				auxbufRX[var]=ringRx.buf[head++];
@@ -878,11 +886,17 @@ void RecibirDatos(uint8_t head){
 			timeoutHMI = 50;
 			HMI_CONNECTED = 1;
 		break;
+		case DESTINATIONSTATION_CMD:
+			head+=7;
+			DestinationStation[0].u8[0]=ringRx.buf[head++];
+			DestinationStation[0].u8[1]=ringRx.buf[head++];
+			LED_BLUE_TOGGLE();
+		break;
 		default:
 			//LED_RED_TOGGLE();
 		break;
 	}
-	LED_RED_TOGGLE();
+	//LED_RED_TOGGLE();
 	EnviarDatos(TESTCMD);
 }
 
@@ -1002,6 +1016,18 @@ void EnviarDatos(uint8_t cmd){
 			ringTx.buf[ringTx.iW++] = StatusWordDIR.u8[1];
 			ringTx.buf[ringTx.iW++] = RealCurrentDIR.u8[0];
 			ringTx.buf[ringTx.iW++] = RealCurrentDIR.u8[1];
+		break;
+		case DESTINOALCANZADO_CMD:
+			ringTx.buf[ringTx.iW++] = 0x02;
+			ringTx.buf[ringTx.iW++] = 0x00;
+			ringTx.buf[ringTx.iW++] = ':';
+			ringTx.buf[ringTx.iW++] = cmd;
+		break;
+		case ORIGENALCANZADO_CMD:
+			ringTx.buf[ringTx.iW++] = 0x02;
+			ringTx.buf[ringTx.iW++] = 0x00;
+			ringTx.buf[ringTx.iW++] = ':';
+			ringTx.buf[ringTx.iW++] = cmd;
 		break;
 		default:
 		break;
