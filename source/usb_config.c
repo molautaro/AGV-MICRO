@@ -638,7 +638,7 @@ void DecodeRFIDSensor(){
 		LED_GREEN_TOGGLE();//LLEGO A DESTINO
 		//operationMode = 2; ENTRA EN MODO FRENADO
 		//brakestatus=0;
-		if(DestinationStation[0].u16[0] == 0x4530){
+		if(DestinationStation[0].u16[0] == 0x3045){
 			EnviarDatos(ORIGENALCANZADO_CMD);
 		}
 		else{
