@@ -73,6 +73,12 @@
 #define DESTINOALCANZADO_CMD					0xD5
 #define ORIGENALCANZADO_CMD						0xD6
 #define CHANGE_CONTROL_CMD						0xD8
+#define BRAKE_MODE_SIM_CMD						0xD9
+
+#define INIT_MODE 								0x00
+#define MANUAL_MODE								0x01
+#define AUTOMATIC_MODE							0x02
+#define BRAKE_MODE								0x03
 
 const uint8_t CARGA_BAT_MESSAGE[] = 	{0x02, 0x48, 0x01, 0x2C, 0x00, 0x00, 0x00, 0x00};
 const uint8_t SPEED_MODE_MESSAGE[] = 	{0x07,0x2F,0x60,0x60,0x00,0x03,0x00,0x00,0x00};
@@ -342,7 +348,7 @@ int main(void) {
 	Distance_Sensor_SIMULATION.f = 2.0;
 	SpeedMotorCalcRPM.f = 0.0;
 	SpeedMotorCalcRPMAUX.f = 0.0;
-	operationMode = 0;
+	operationMode = INIT_MODE;
 	init_comp = 4;
 
 	Kp_SteeringMotor.u32 = 0;
@@ -391,7 +397,7 @@ int main(void) {
 void workingmode(){
 	//LED_BLUE_TOGGLE();
 	switch(operationMode){
-	case 0://MODO INICIALIZACION
+	case INIT_MODE://MODO INICIALIZACION
 		//init_status = 0;
 		if(!timeoutINIT || READY_RECIVE){
 			switch(init_comp){
@@ -442,35 +448,19 @@ void workingmode(){
 			break;
 			timeoutINIT = 50;
 		}
-//		if(!FIRST_INIT){
-//					for (uint8_t var = 0; var < 9; ++var) {
-//						auxbufRX[var]=SPEED_MODE_MESSAGE[var];
-//					}
-//					CreateCANMessage(SPEED_MODE_CMD);
-//		}
-//		else{
-//			for (uint8_t var = 0; var < 9; ++var) {
-//					auxbufRX[var]=POS_MODE_MESSAGE[var];
-//				}
-//				//CreateCANMessage(POSITION_MODE_CMD);
-//		}
-//		if(){
-//
-//		}
 		//ChargeToCANBuf(DATA_STD, auxbufRX, MOTORS);
 		/* poner aqui lo que iria en el buffer*/
 	break;
-	case 1:
+	case MANUAL_MODE:
 	break;
-	case 2://MODO AUTOMATICO
-//		SpeedMotorControl(); //funcion control velocidad
-//		SteeringMotorControl(); //funcion control direccion
+	case AUTOMATIC_MODE://MODO AUTOMATICO
+		SpeedMotorControl(); //funcion control velocidad
+		SteeringMotorControl(); //funcion control direccion
 	break;
-	case 3:
+	case BRAKE_MODE:
 		if(!timeoutBRAKE || READY_RECIVE){
 			BrakeControl();//funcion de frenado.
 		}
-
 	break;
 	}
 }
@@ -500,27 +490,24 @@ void DecodeCANMessage(){
 			break;
 		case ID_REC_MOTOR_SPEED:
 			READY_RECIVE = 1;
-			LED_GREEN_TOGGLE();
-			if(operationMode==0){
+			//LED_GREEN_TOGGLE();
+			if(operationMode==INIT_MODE){
 				init_comp++;
 //				if (init_comp == 3)
 //					operationMode = 1;
 			}
-			if(operationMode==2){
-				brakestatus++;
+			if(operationMode==BRAKE_MODE){
+				//brakestatus++;
 			}
 		break;
 		case ID_REC_MOTOR_DIRECTION:
 			READY_RECIVE = 1;
 			LED_GREEN_TOGGLE();
-			if(operationMode==0){
+			if(operationMode==INIT_MODE){
 				init_comp++;
 				//FIRST_INIT=0;
 //				if (init_comp == 5)
 //					operationMode = 1;
-			}
-			if(operationMode==2){
-				brakestatus++;
 			}
 		break;
 		case ID_MOTOR_SPEED_ALIVE:
@@ -541,7 +528,7 @@ void DecodeCANMessage(){
 			RealCurrentVEL.i8[0] = RX_STD_Frame.dataByte6;
 			RealCurrentVEL.i8[1] = RX_STD_Frame.dataByte7;
 			READY_RECIVE = 1;
-			if(operationMode == 0){
+			if(operationMode == INIT_MODE){
 				init_comp++;
 			}
 
@@ -556,11 +543,11 @@ void DecodeCANMessage(){
 			RealCurrentDIR.i8[0] = RX_STD_Frame.dataByte6;
 			RealCurrentDIR.i8[1] = RX_STD_Frame.dataByte7;
 			READY_RECIVE = 1;
-			if(operationMode == 0 && init_comp == 6){
+			if(operationMode == INIT_MODE && init_comp == 6){
 				init_comp++;
 				 if(init_comp == 7){
 					 LED_GREEN_TOGGLE();
-					 operationMode = 1;
+					 operationMode = MANUAL_MODE;
 				 }
 			}
 		break;
@@ -635,7 +622,7 @@ void DecodeRFIDSensor(){
 	RFIDData[1].u8[3] = RX_STD_Frame.dataByte7;
 
 	if (RFIDData[0].u16[0]==DestinationStation[0].u16[0]){
-		LED_GREEN_TOGGLE();//LLEGO A DESTINO
+		//LED_GREEN_TOGGLE();//LLEGO A DESTINO
 		//operationMode = 2; ENTRA EN MODO FRENADO
 		//brakestatus=0;
 		if(DestinationStation[0].u16[0] == 0x3045){
@@ -874,14 +861,15 @@ void RecibirDatos(uint8_t head){
 			READY_RECIVE = 1;
 		break;
 		case CHANGE_CONTROL_CMD:
-			if(operationMode == 1){
-				operationMode = 2;
+			if(operationMode == MANUAL_MODE){
+				operationMode = AUTOMATIC_MODE;
 			}
-			else if (operationMode == 2) {
-				operationMode = 1;
+			else if (operationMode == AUTOMATIC_MODE) {
+				operationMode = MANUAL_MODE;
 			}
 		break;
 		case HMI_ALIVE_CMD:
+			head+=9;
 			ALIVE_RECIVE_CMD = 1;
 			timeoutHMI = 50;
 			HMI_CONNECTED = 1;
@@ -890,7 +878,11 @@ void RecibirDatos(uint8_t head){
 			head+=7;
 			DestinationStation[0].u8[0]=ringRx.buf[head++];
 			DestinationStation[0].u8[1]=ringRx.buf[head++];
-			LED_BLUE_TOGGLE();
+			//LED_BLUE_TOGGLE();
+		break;
+		case BRAKE_MODE_SIM_CMD:
+			head+=9;
+			operationMode = BRAKE_MODE;
 		break;
 		default:
 			//LED_RED_TOGGLE();
@@ -1222,33 +1214,20 @@ void ActionQT(){
 void BrakeControl(){
 	switch(brakestatus){
 	case 0:
-		SpeedMotorCalcDEC.i32 = 0;
-		auxbufRX[0] = 0x07; //id motor velocidad
-		auxbufRX[1] = 0x23;
-		auxbufRX[2] = 0xFF;
-		auxbufRX[3] = 0x60;
-		auxbufRX[4] = 0x00;
-		auxbufRX[5] = SpeedMotorCalcDEC.i8[0];
-		auxbufRX[6] = SpeedMotorCalcDEC.i8[1];
-		auxbufRX[7] = SpeedMotorCalcDEC.i8[2];
-		auxbufRX[8] = SpeedMotorCalcDEC.i8[3];
-		timeoutBRAKE = 5;
-	break;
-	case 1:
-		for (uint8_t i = 0; i < 9; ++i) {
-			auxbufRX[i]=DISABLE_MVEL[i];
+		if (RealSpeedVEL.i32 >= 2 || RealSpeedVEL.i32 <= -2) {
+			SpeedMotorCalcDEC.i32 = 0;
+			auxbufRX[0] = 0x07; //id motor velocidad
+			auxbufRX[1] = 0x23;
+			auxbufRX[2] = 0xFF;
+			auxbufRX[3] = 0x60;
+			auxbufRX[4] = 0x00;
+			auxbufRX[5] = SpeedMotorCalcDEC.i8[0];
+			auxbufRX[6] = SpeedMotorCalcDEC.i8[1];
+			auxbufRX[7] = SpeedMotorCalcDEC.i8[2];
+			auxbufRX[8] = SpeedMotorCalcDEC.i8[3];
+			timeoutBRAKE = 5;
 		}
-		CreateCANMessage(DISABLE_MOTOR_CMD);
-		timeoutBRAKE = 5;
-	break;
-	case 2:
-		for (uint8_t i = 0; i < 9; ++i) {
-			auxbufRX[i]=DISABLE_MPOS[i];
-		}
-		CreateCANMessage(DISABLE_MOTOR_CMD);
-		timeoutBRAKE = 5;
-	break;
-	case 3:
+
 	break;
 	}
 }
