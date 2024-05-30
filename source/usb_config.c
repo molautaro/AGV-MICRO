@@ -149,6 +149,7 @@ void PositionMotorControl();
 void BrakeControl();
 void checkDeviceConnection();
 void CheckFaults();
+void ChargeToCanBUF_REAL(uint8_t format, flexcan_mb_transfer_t *CANTransfer, uint8_t *data, uint32_t id);
 /*******************************************************************************
  * Variables
  ******************************************************************************/
@@ -293,8 +294,9 @@ int main(void) {
     BOARD_InitBootPins();
     BOARD_InitBootClocks();
     BOARD_InitBootPeripherals();
-    //FLEXCAN_SetRxMbGlobalMask(CAN0, FLEXCAN_RX_MB_STD_MASK(0, 0, 0));
-	//FLEXCAN_SetRxMbGlobalMask(CAN0, FLEXCAN_RX_MB_EXT_MASK(0, 0, 0));
+    FLEXCAN_SetRxMbGlobalMask(CAN0, FLEXCAN_RX_MB_STD_MASK(0, 0, 0));
+    FLEXCAN_SetRxMbGlobalMask(CAN0, FLEXCAN_RX_MB_EXT_MASK(0, 0, 0));
+    //FLEXCAN_SetRxMbGlobalMask(CAN0, FLEXCAN_RX_MB_STD_MASK(0x7FF, 0, 0));  // Solo coincide con 0x7FF
 
 
 	ringTx.buf=txBuf;
@@ -341,21 +343,15 @@ int main(void) {
 	mbConfigSTD.type   = kFLEXCAN_FrameTypeData;
 	mbConfigSTD.id = FLEXCAN_ID_STD(0x0);
 	FLEXCAN_SetRxMbConfig(CAN0, RX_MESSAGE_STD_BUFFER_NUM, &mbConfigSTD, true);
-	uint32_t mask0 = FLEXCAN_RX_MB_STD_MASK(0x456, 0, 0);
-	FLEXCAN_SetRxMbGlobalMask(CAN0, ~mask0); // Invertir la máscara
 
 	// Configure new mailbox for reception
 	newRxTransfer.mbIdx = NEW_RX_MESSAGE_BUFFER_NUM;
 	newRxTransfer.frame = &newRxFrame;
 	newMbConfigSTD.format = kFLEXCAN_FrameFormatStandard;
 	newMbConfigSTD.type = kFLEXCAN_FrameTypeData;
-	newMbConfigSTD.id = FLEXCAN_ID_STD(0x456);
+	newMbConfigSTD.id = FLEXCAN_ID_STD(0x123);
+    FLEXCAN_SetRxIndividualMask(CAN0, NEW_RX_MESSAGE_BUFFER_NUM, FLEXCAN_RX_MB_STD_MASK(0x7FF, 0x123, 0));  // Coincide exactamente con 0x123
 	FLEXCAN_SetRxMbConfig(CAN0, NEW_RX_MESSAGE_BUFFER_NUM, &newMbConfigSTD, true);
-	uint32_t mask1 = FLEXCAN_RX_MB_STD_MASK(0x7FF, 0, 0);
-	FLEXCAN_SetRxIndividualMask(CAN0, 1, mask1);
-
-
-	//FLEXCAN_SetRxIndividualMask(CAN0, NEW_RX_MESSAGE_BUFFER_NUM, FLEXCAN_RX_MB_STD_MASK(0x7FF, 0x123, 0));  // Coincide exactamente con 0x123
 	//mbConfigEXT.format = kFLEXCAN_FrameFormatExtend;
 	//mbConfigEXT.type   = kFLEXCAN_FrameTypeData;
 	//mbConfigEXT.id = FLEXCAN_ID_EXT(0);
@@ -404,9 +400,11 @@ int main(void) {
 			//EnviarDatos(MOTOR_SPEED_DATA2_CMD);
 			//EnviarDatos(MOTOR_DIR_DATA1_CMD);
 			//EnviarDatos(MOTOR_DIR_DATA2_CMD);
+    		uint8_t test1[] = {0x07,0x23,0x84,0x60,0x00,0x66,0x06,0x00,0x00};
+    		uint8_t test2[] = {0x17,0x53,0x55,0x54,0x53,0x51,0x99,0x88,0x77};
 			timeoutUSB = 100;
-			//ChargeToCANBuf2(DATA_STD, 0, FLEXCAN_ID_STD(0x66));
-            //FLEXCAN_TransferSendNonBlocking(CAN0, &flexcanHandle, &newTxTransfer);
+			ChargeToCanBUF_REAL(DATA_STD, &TX_CAN_BUF, test1, FLEXCAN_ID_STD(test1[0]));
+			ChargeToCanBUF_REAL(DATA_STD, &newTxTransfer, test2, FLEXCAN_ID_STD(test2[0]));
             //READY_RECIVE = 1;
             //CreateCANMessage(SPEED_MOTOR_CMD);
             //SpeedMotorControl();
@@ -1151,6 +1149,55 @@ void CreateCANMessage(uint8_t msj){
 	READY_RECIVE=0;
 	timeoutCAN_MESSAGE=5;
 	}
+}
+
+void ChargeToCanBUF_REAL(uint8_t format, flexcan_mb_transfer_t *CANTransfer, uint8_t *data, uint32_t id){
+
+	flexcan_frame_t *CANFrame = CANTransfer->frame;
+	CANFrame->dataByte0 = 0;
+	CANFrame->dataByte1 = 0;
+	CANFrame->dataByte2 = 0;
+	CANFrame->dataByte3 = 0;
+	CANFrame->dataByte4 = 0;
+	CANFrame->dataByte5 = 0;
+	CANFrame->dataByte6 = 0;
+	CANFrame->dataByte7 = 0;
+
+	switch(format){
+		case DATA_EXT:
+			CANFrame->type = kFLEXCAN_FrameTypeData;
+			CANFrame->format = kFLEXCAN_FrameFormatExtend;
+			CANFrame->id = id;
+			CANFrame->dataByte0 = data[1];
+			CANFrame->dataByte1 = data[2];
+			CANFrame->dataByte2 = data[3];
+			CANFrame->dataByte3 = data[4];
+			CANFrame->dataByte4 = data[5];
+			CANFrame->dataByte5 = data[6];
+			CANFrame->dataByte6 = data[7];
+			CANFrame->dataByte7 = data[8];
+		break;
+		case DATA_STD:
+			CANFrame->type = kFLEXCAN_FrameTypeData;
+			CANFrame->format = kFLEXCAN_FrameFormatStandard;
+			CANFrame->id = id;
+			CANFrame->dataByte0 = data[1];
+			CANFrame->dataByte1 = data[2];
+			CANFrame->dataByte2 = data[3];
+			CANFrame->dataByte3 = data[4];
+			CANFrame->dataByte4 = data[5];
+			CANFrame->dataByte5 = data[6];
+			CANFrame->dataByte6 = data[7];
+			CANFrame->dataByte7 = data[8];
+		break;
+		case REMOTE_EXT:
+		break;
+		case REMOTE_STD:
+		break;
+		case PDO:
+		break;
+		}
+    FLEXCAN_TransferSendNonBlocking(CAN0, &flexcanHandle, CANTransfer);
 }
 
 void ChargeToCANBuf(uint8_t whatFormat, uint8_t payloadCAN[], uint32_t id){
