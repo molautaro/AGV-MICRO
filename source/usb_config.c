@@ -12,12 +12,16 @@
 
 /* insert other include files here. */
 
+
+
 #define ID_M_DIREC 								FLEXCAN_ID_STD(0x601) //ID CAN MOTOR DIRECCION
 #define ID_M_VEL 								FLEXCAN_ID_STD(0x607) //ID CAN MOTOR VELOCIDAD O TRACCION
 #define RX_MESSAGE_STD_BUFFER_NUM 				(0)
 #define RX_MESSAGE_EXT_BUFFER_NUM 				(1)
 #define TX_MESSAGE_BUFFER_NUM					(2)
 #define TX_STD_MESSAGE_BUFFER_NUM 				(3)
+#define NEW_TX_MESSAGE_BUFFER_NUM 				(4)
+#define NEW_RX_MESSAGE_BUFFER_NUM 				(5)
 #define ID_RFID_SENSOR 							FLEXCAN_ID_STD(0x100) //ID SENSOR RFID
 #define ID_MAGNETIC_SENSOR 						FLEXCAN_ID_STD(0x123) //ID SENSOR MAGNETICO
 #define ID_SEND_BATERIA 						FLEXCAN_ID_EXT(0x1806E5F4)//ID de msjs enviados desde placa a la bateria
@@ -134,6 +138,7 @@ void DecodeRFIDSensor();
 void CreateCANMessage(uint8_t msj);
 void ActionQT();
 void ChargeToCANBuf(uint8_t whatFormat, uint8_t payloadCAN[], uint32_t id);
+void ChargeToCANBuf2(uint8_t whatFormat, uint8_t payloadCAN[], uint32_t id);
 void workingmode();
 float speedControlCalc(float d, int Vmax);
 uint32_t speedConvertionRPMtoDEC(float rpmSpeed);
@@ -216,7 +221,7 @@ _sWork RealPositionDIR,StatusWordDIR,RealCurrentDIR; //Variables para almacenar 
 #define SENSORSTATUS_7 						SensorsStatus.bit.b7 //Estado Sensor 7
 
 
-#define w 									flag1.bit.b0 //
+#define RX_CAN_COMPLETE2					flag1.bit.b0 //
 #define RX_CAN_COMPLETE 					flag1.bit.b1
 #define BATT_FULL_CHARGE 					flag1.bit.b2
 #define INIT_COMPLETE 						flag1.bit.b3
@@ -270,6 +275,14 @@ flexcan_mb_transfer_t TX_CAN_BUF, RX_EXT_CAN_BUF, RX_STD_CAN_BUF;//buffer para e
 //flexcan_frame_t frame;
 flexcan_rx_mb_config_t mbConfigSTD, mbConfigEXT;
 
+flexcan_frame_t newTxFrame;
+flexcan_mb_transfer_t newTxTransfer;
+flexcan_rx_mb_config_t newMbConfigSTD;
+
+flexcan_frame_t newRxFrame;
+flexcan_mb_transfer_t newRxTransfer;
+flexcan_rx_mb_config_t newMbConfigSTD;
+
 
 /*
  * @brief   Application entry point.
@@ -280,8 +293,9 @@ int main(void) {
     BOARD_InitBootPins();
     BOARD_InitBootClocks();
     BOARD_InitBootPeripherals();
-    FLEXCAN_SetRxMbGlobalMask(CAN0, FLEXCAN_RX_MB_STD_MASK(0, 0, 0));
-	FLEXCAN_SetRxMbGlobalMask(CAN0, FLEXCAN_RX_MB_EXT_MASK(0, 0, 0));
+    //FLEXCAN_SetRxMbGlobalMask(CAN0, FLEXCAN_RX_MB_STD_MASK(0, 0, 0));
+	//FLEXCAN_SetRxMbGlobalMask(CAN0, FLEXCAN_RX_MB_EXT_MASK(0, 0, 0));
+
 
 	ringTx.buf=txBuf;
 	ringRx.buf=rxBuf;
@@ -298,6 +312,12 @@ int main(void) {
 	LED_BLUE_INIT(1);
 	FIRST_INIT=0;
 	READY_RECIVE=1;
+
+	// Configure new mailbox for transmission
+	newTxFrame.type = kFLEXCAN_FrameTypeData;
+	newTxFrame.length = 8;
+	newTxTransfer.mbIdx = NEW_TX_MESSAGE_BUFFER_NUM;
+	newTxTransfer.frame = &newTxFrame;
 
 	//TX_CAN_BUF.frame->format = kFLEXCAN_FrameFormatStandard;
 	txFrame.type = kFLEXCAN_FrameTypeData;
@@ -321,6 +341,21 @@ int main(void) {
 	mbConfigSTD.type   = kFLEXCAN_FrameTypeData;
 	mbConfigSTD.id = FLEXCAN_ID_STD(0x0);
 	FLEXCAN_SetRxMbConfig(CAN0, RX_MESSAGE_STD_BUFFER_NUM, &mbConfigSTD, true);
+	uint32_t mask0 = FLEXCAN_RX_MB_STD_MASK(0x456, 0, 0);
+	FLEXCAN_SetRxMbGlobalMask(CAN0, ~mask0); // Invertir la máscara
+
+	// Configure new mailbox for reception
+	newRxTransfer.mbIdx = NEW_RX_MESSAGE_BUFFER_NUM;
+	newRxTransfer.frame = &newRxFrame;
+	newMbConfigSTD.format = kFLEXCAN_FrameFormatStandard;
+	newMbConfigSTD.type = kFLEXCAN_FrameTypeData;
+	newMbConfigSTD.id = FLEXCAN_ID_STD(0x456);
+	FLEXCAN_SetRxMbConfig(CAN0, NEW_RX_MESSAGE_BUFFER_NUM, &newMbConfigSTD, true);
+	uint32_t mask1 = FLEXCAN_RX_MB_STD_MASK(0x7FF, 0, 0);
+	FLEXCAN_SetRxIndividualMask(CAN0, 1, mask1);
+
+
+	//FLEXCAN_SetRxIndividualMask(CAN0, NEW_RX_MESSAGE_BUFFER_NUM, FLEXCAN_RX_MB_STD_MASK(0x7FF, 0x123, 0));  // Coincide exactamente con 0x123
 	//mbConfigEXT.format = kFLEXCAN_FrameFormatExtend;
 	//mbConfigEXT.type   = kFLEXCAN_FrameTypeData;
 	//mbConfigEXT.id = FLEXCAN_ID_EXT(0);
@@ -328,6 +363,7 @@ int main(void) {
 
 	FLEXCAN_TransferCreateHandle(CAN0, &flexcanHandle, flexcan_callback, NULL);
 	FLEXCAN_TransferReceiveNonBlocking(CAN0, &flexcanHandle, &RX_STD_CAN_BUF);
+	FLEXCAN_TransferReceiveNonBlocking(CAN0, &flexcanHandle, &newRxTransfer);
 	//FLEXCAN_TransferReceiveNonBlocking(CAN0, &flexcanHandle, &RX_EXT_CAN_BUF);
 
 #ifndef BOARD_INIT_DEBUG_CONSOLE_PERIPHERAL
@@ -348,8 +384,8 @@ int main(void) {
 	Distance_Sensor_SIMULATION.f = 2.0;
 	SpeedMotorCalcRPM.f = 0.0;
 	SpeedMotorCalcRPMAUX.f = 0.0;
-	operationMode = INIT_MODE;
-	init_comp = 4;
+	operationMode = MANUAL_MODE;
+	init_comp = 9;
 
 	Kp_SteeringMotor.u32 = 0;
 	Kd_SteeringMotor.u32 = 0;
@@ -368,7 +404,13 @@ int main(void) {
 			//EnviarDatos(MOTOR_SPEED_DATA2_CMD);
 			//EnviarDatos(MOTOR_DIR_DATA1_CMD);
 			//EnviarDatos(MOTOR_DIR_DATA2_CMD);
-			timeoutUSB = 400;
+			timeoutUSB = 100;
+			//ChargeToCANBuf2(DATA_STD, 0, FLEXCAN_ID_STD(0x66));
+            //FLEXCAN_TransferSendNonBlocking(CAN0, &flexcanHandle, &newTxTransfer);
+            //READY_RECIVE = 1;
+            //CreateCANMessage(SPEED_MOTOR_CMD);
+            //SpeedMotorControl();
+
 		}
 
     	if(!timeoutMOTOR_DATA_QT){
@@ -376,6 +418,7 @@ int main(void) {
 			//EnviarDatos(MOTOR_SPEED_DATA2_CMD);
 			EnviarDatos(MOTOR_DIR_DATA1_CMD);
 			//EnviarDatos(MOTOR_DIR_DATA2_CMD);
+
 			timeoutMOTOR_DATA_QT = 50;
 		}
     	//PONER TIMEOUT PARA ENVIAR DATOS A PANTALLA
@@ -383,8 +426,14 @@ int main(void) {
 			ActionQT();
 		}
     	if(RX_CAN_COMPLETE){//recibe exitosamente un msj por CAN
-			DecodeCANMessage();//llamo a funcion de decodificar mensaje
+			//DecodeCANMessage();//llamo a funcion de decodificar mensaje
 			RX_CAN_COMPLETE = 0;
+			FLEXCAN_TransferReceiveNonBlocking(CAN0, &flexcanHandle, &RX_STD_CAN_BUF);
+		}
+    	if(RX_CAN_COMPLETE2){//recibe exitosamente un msj por CAN
+    				//DecodeCANMessage();//llamo a funcion de decodificar mensaje
+			RX_CAN_COMPLETE2 = 0;
+			FLEXCAN_TransferReceiveNonBlocking(CAN0, &flexcanHandle, &newRxTransfer);
 		}
         i++ ;
         /* 'Dummy' NOP to allow source level single stepping of
@@ -454,8 +503,8 @@ void workingmode(){
 	case MANUAL_MODE:
 	break;
 	case AUTOMATIC_MODE://MODO AUTOMATICO
-		SpeedMotorControl(); //funcion control velocidad
-		SteeringMotorControl(); //funcion control direccion
+		//SpeedMotorControl(); //funcion control velocidad
+		//SteeringMotorControl(); //funcion control direccion
 	break;
 	case BRAKE_MODE:
 		if(!timeoutBRAKE || READY_RECIVE){
@@ -502,7 +551,7 @@ void DecodeCANMessage(){
 		break;
 		case ID_REC_MOTOR_DIRECTION:
 			READY_RECIVE = 1;
-			LED_GREEN_TOGGLE();
+			//LED_GREEN_TOGGLE();
 			if(operationMode==INIT_MODE){
 				init_comp++;
 				//FIRST_INIT=0;
@@ -545,9 +594,9 @@ void DecodeCANMessage(){
 			READY_RECIVE = 1;
 			if(operationMode == INIT_MODE && init_comp == 6){
 				init_comp++;
-				 if(init_comp == 7){
+				 if(init_comp >= 7){
 					 LED_GREEN_TOGGLE();
-					 operationMode = MANUAL_MODE;
+					 operationMode = AUTOMATIC_MODE;
 				 }
 			}
 		break;
@@ -561,34 +610,51 @@ static void flexcan_callback(CAN_Type *base, flexcan_handle_t *handle, status_t 
 	switch (status){
 	/* Process FlexCAN Rx event. */
 	case kStatus_FLEXCAN_RxIdle:
-		//PRINTF("prueba \n");
-		//LED_BLUE_TOGGLE();
-		/*if (RX_MESSAGE_EXT_BUFFER_NUM == result)
-		{
-			//rxComplete = 1;
-			LED_GREEN_TOGGLE();
-			FLEXCAN_TransferReceiveNonBlocking(CAN0, &flexcanHandle, &RX_EXT_CAN_BUF);
-		}*/
-		if (RX_MESSAGE_STD_BUFFER_NUM == result)
-		{
-			RX_CAN_COMPLETE = 1;
-			//recepcion completada
-            FLEXCAN_TransferReceiveNonBlocking(CAN0, &flexcanHandle, &RX_STD_CAN_BUF);
-			//LED_BLUE_TOGGLE();
+		switch (result) {
+			case RX_MESSAGE_STD_BUFFER_NUM:
+				PRINTF("Received data on standard buffer.\n");
+				// Handle data received on standard buffer
+				// Example: Process RX_STD_Frame
+				RX_CAN_COMPLETE = 1;
+
+				break;
+			case NEW_RX_MESSAGE_BUFFER_NUM:
+				PRINTF("Received data on new buffer.\n");
+				// Handle data received on new buffer
+				// Example: Process newRxFrame
+				// Custom handling code
+				RX_CAN_COMPLETE2 = 1;
+
+				break;
+			default:
+				PRINTF("Received data on unknown buffer: %d\n", result);
+				break;
 		}
+
 		break;
 	case kStatus_FLEXCAN_RxOverflow:
 		//LED_BLUE_TOGGLE();
-		if (RX_MESSAGE_EXT_BUFFER_NUM == result)
-		{
-			//rxComplete = 1;
+		switch (result) {
+			case RX_MESSAGE_STD_BUFFER_NUM:
+				PRINTF("Received data on standard buffer.\n");
+				// Handle data received on standard buffer
+				// Example: Process RX_STD_Frame
+				RX_CAN_COMPLETE = 1;
+				FLEXCAN_TransferReceiveNonBlocking(CAN0, &flexcanHandle, &RX_STD_CAN_BUF);
+				break;
+			case NEW_RX_MESSAGE_BUFFER_NUM:
+				PRINTF("Received data on new buffer.\n");
+				// Handle data received on new buffer
+				// Example: Process newRxFrame
+				// Custom handling code
+				RX_CAN_COMPLETE2 = 1;
+				FLEXCAN_TransferReceiveNonBlocking(CAN0, &flexcanHandle, &newRxTransfer);
+				break;
+			default:
+				PRINTF("Received data on unknown buffer: %d\n", result);
+				break;
 		}
-		if (RX_MESSAGE_STD_BUFFER_NUM == result)
-		{
-			RX_CAN_COMPLETE = 1;
-			FLEXCAN_TransferReceiveNonBlocking(CAN0, &flexcanHandle, &RX_STD_CAN_BUF);
-		}
-		break;
+
 		/* Process FlexCAN Tx event. */
 	case kStatus_FLEXCAN_TxIdle:
 		//LED_GREEN_TOGGLE();
@@ -1139,6 +1205,36 @@ void ChargeToCANBuf(uint8_t whatFormat, uint8_t payloadCAN[], uint32_t id){
 	}
 }
 
+
+void ChargeToCANBuf2(uint8_t whatFormat, uint8_t payloadCAN[], uint32_t id){
+
+	newTxFrame.dataByte0 = 0;
+	newTxFrame.dataByte1 = 0;
+	newTxFrame.dataByte2 = 0;
+	newTxFrame.dataByte3 = 0;
+	newTxFrame.dataByte4 = 0;
+	newTxFrame.dataByte5 = 0;
+	newTxFrame.dataByte6 = 0;
+	newTxFrame.dataByte7 = 0;
+
+	switch(whatFormat){
+	case DATA_STD:
+		newTxFrame.type = kFLEXCAN_FrameTypeData;
+		newTxFrame.format = kFLEXCAN_FrameFormatStandard;
+		newTxFrame.id = id;
+		newTxFrame.dataByte0 = 0x01;
+		newTxFrame.dataByte1 = 0x02;
+		newTxFrame.dataByte2 = 0x03;
+		newTxFrame.dataByte3 = 0x04;
+		newTxFrame.dataByte4 = 0x05;
+		newTxFrame.dataByte5 = 0x06;
+		newTxFrame.dataByte6 = 0x07;
+		newTxFrame.dataByte7 = 0x08;
+	break;
+	}
+}
+
+
 void ActionQT(){
 	if(ALIVE_RECIVE_CMD){
 		ALIVE_RECIVE_CMD = 0;
@@ -1233,7 +1329,7 @@ void BrakeControl(){
 }
 
 void SpeedMotorControl(){
-	SpeedMotorCalcRPMAUX.f = speedControlCalc(Distance_Sensor_REAL.f, 3000);
+	SpeedMotorCalcRPMAUX.f = speedControlCalc(Distance_Sensor_REAL.f, 2500);
 	if(fabs(SpeedMotorCalcRPM.f-SpeedMotorCalcRPMAUX.f) >= 50){
 		//cambiar velocidad porque el cambio es de mas de 50rpm
 		SpeedMotorCalcRPM.f = SpeedMotorCalcRPMAUX.f;
@@ -1278,12 +1374,12 @@ uint32_t speedConvertionRPMtoDEC(float rpmSpeed){
 
 float speedControlCalc(float d, int Vmax){
 	LED_BLUE_TOGGLE();
-	if (d > 8) {
+	if (d > 50) {
 		return Vmax+0.0;
-	} else if (d >= 4 && d <= 8) {
-		return (Vmax) - ((Vmax / 2) * ((8 - d) / 4.0));
-	} else if (d >= 1.5 && d < 4) {
-		return ((Vmax / 2) - ((Vmax/3) * ((4-d)/2.5)));
+	} else if (d >= 30 && d <= 50) {
+		return (Vmax) - ((Vmax / 2) * ((50 - d) / 4.0));
+	} else if (d >= 15.0 && d < 30) {
+		return ((Vmax / 2) - ((Vmax/3) * ((30-d)/2.5)));
 	} else {
 		return 0.0;
 	}
@@ -1365,6 +1461,9 @@ void PositionMotorControl(){
 void checkDeviceConnection(){
 	if (MOTOR_VEL_CONNECTED & MOTOR_DIR_CONNECTED & MAG_SENSOR_CONNECTED & RFID_SENSOR_CONNECTED & HMI_CONNECTED){
 		ALL_DEVICES_CONNECTED = 1;
+		LED_GREEN_ON();
+		LED_BLUE_ON();
+		LED_RED_ON();
 	}
 	else{
 		ALL_DEVICES_CONNECTED = 0;
