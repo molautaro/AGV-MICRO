@@ -20,7 +20,7 @@
 #define NEW_TX_MESSAGE_BUFFER_NUM 				(3)
 //#define NEW_TX_MESSAGE_BUFFER_NUM 				(4)
 #define ID_RFID_SENSOR 							FLEXCAN_ID_STD(0x100) //ID SENSOR RFID
-#define ID_MAGNETIC_SENSOR 						FLEXCAN_ID_STD(0x123) //ID SENSOR MAGNETICO
+#define ID_MAGNETIC_SENSOR 						FLEXCAN_ID_STD(0x010) //ID SENSOR MAGNETICO
 #define ID_SEND_BATERIA 						FLEXCAN_ID_EXT(0x1806E5F4)//ID de msjs enviados desde placa a la bateria
 #define ID_REC_BATERIA 							FLEXCAN_ID_EXT(0x18FF50E5)//ID de msjs que recibe la placa desde la bateria
 #define ID_REC_MOTOR_SPEED 						FLEXCAN_ID_STD(0x587) //ID RECEPCION SDO MOTOR VELOCIDAD
@@ -522,7 +522,7 @@ void DecodeCANMessage(){
 			LED_GREEN_TOGGLE();
 			if(operationMode==INIT_MODE){
 				init_comp++;
-				 if(init_comp == 4){
+				 if(init_comp == 5){
 					 LED_GREEN_TOGGLE();
 					 operationMode = MANUAL_MODE;
 				 }
@@ -660,15 +660,15 @@ void DecodeMagneticSensor(){
 	//	SensorsStatus.byte =
 	//}
 
-	COORD_SENSORES[0] = (magneticSensorBitStatus & (1 << 8))>>8;
-	COORD_SENSORES[1] = (magneticSensorBitStatus & (1 << 9))>>9;
-	COORD_SENSORES[2] = (magneticSensorBitStatus & (1 << 10))>>10;
-	COORD_SENSORES[3] = (magneticSensorBitStatus & (1 << 11))>>11;
+	COORD_SENSORES[0] = (magneticSensorBitStatus & (1 << 11))>>11;
+	COORD_SENSORES[1] = (magneticSensorBitStatus & (1 << 10))>>10;
+	COORD_SENSORES[2] = (magneticSensorBitStatus & (1 << 9))>>9;
+	COORD_SENSORES[3] = (magneticSensorBitStatus & (1 << 8))>>8;
 	// -------------------------- LOW ------------------------- //
-	COORD_SENSORES[4] = magneticSensorBitStatus & (1 << 0);
-	COORD_SENSORES[5] = (magneticSensorBitStatus & (1 << 1))>>1;
-	COORD_SENSORES[6] = (magneticSensorBitStatus & (1 << 2))>>2;
-	COORD_SENSORES[7] = (magneticSensorBitStatus & (1 << 3))>>3;
+	COORD_SENSORES[4] = (magneticSensorBitStatus & (1 << 3))>>3;
+	COORD_SENSORES[5] = (magneticSensorBitStatus & (1 << 2))>>2;
+	COORD_SENSORES[6] = (magneticSensorBitStatus & (1 << 1))>>1;
+	COORD_SENSORES[7] = (magneticSensorBitStatus & (1 << 0));
 
 }
 
@@ -778,13 +778,14 @@ void RecibirDatos(uint8_t head){
 			for (uint8_t var = 0; var < 9; var++) {
 				auxbufRX[var]=ringRx.buf[head++];
 			}
-
+			ChargeToCanBUF(DATA_STD, &TX_CAN_BUF, auxbufRX, FLEXCAN_ID_STD(auxbufRX[0] + 0x600));
 		break;
 		case DISABLE_MOTOR_CMD:
 			DISABLE_RECIVE_CMD = 1;
 			for (uint8_t var = 0; var < 9; var++) {
 				auxbufRX[var]=ringRx.buf[head++];
 			}
+			ChargeToCanBUF(DATA_STD, &TX_CAN_BUF, auxbufRX, FLEXCAN_ID_STD(auxbufRX[0] + 0x600));
 		break;
 		case SPEED_MODE_CMD:
 			SPEED_MODE_REC_CMD = 1;
@@ -809,24 +810,28 @@ void RecibirDatos(uint8_t head){
 			for (uint8_t var = 0; var < 9; var++) {
 				auxbufRX[var]=ringRx.buf[head++];
 			}
+			ChargeToCanBUF(DATA_STD, &TX_CAN_BUF, auxbufRX, FLEXCAN_ID_STD(auxbufRX[0] + 0x600));
 		break;
 		case POS_MOTOR_CMD:
 			TARGET_POS_REC_CMD = 1;
 			for (uint8_t var = 0; var < 9; var++) {
 				auxbufRX[var]=ringRx.buf[head++];
 			}
+			ChargeToCanBUF(DATA_STD, &TX_CAN_BUF, auxbufRX, FLEXCAN_ID_STD(auxbufRX[0] + 0x600));
 		break;
 		case INVERTIR_1_CMD:
 			INVERTIR1_RECIVE_CMD = 1;
 			for (uint8_t var = 0; var < 9; var++) {
 				auxbufRX[var]=ringRx.buf[head++];
 			}
+			ChargeToCanBUF(DATA_STD, &TX_CAN_BUF, auxbufRX, FLEXCAN_ID_STD(auxbufRX[0] + 0x600));
 		break;
 		case INVERTIR_2_CMD:
 			INVERTIR2_RECIVE_CMD = 1;
 			for (uint8_t var = 0; var < 9; var++) {
 				auxbufRX[var]=ringRx.buf[head++];
 			}
+			ChargeToCanBUF(DATA_STD, &TX_CAN_BUF, auxbufRX, FLEXCAN_ID_STD(auxbufRX[0] + 0x600));
 		break;
 		case DISTANCE_SENSOR_CMD:
 			head+=5;
