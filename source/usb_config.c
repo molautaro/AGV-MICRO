@@ -524,7 +524,7 @@ void DecodeCANMessage(){
 				init_comp++;
 				 if(init_comp == 5){
 					 LED_GREEN_TOGGLE();
-					 operationMode = MANUAL_MODE;
+					 operationMode = AUTOMATIC_MODE;
 				 }
 				//FIRST_INIT=0;
 //				if (init_comp == 5)
@@ -804,6 +804,7 @@ void RecibirDatos(uint8_t head){
 			for (uint8_t var = 0; var < 9; var++) {
 				auxbufRX[var]=ringRx.buf[head++];
 			}
+			ChargeToCanBUF(DATA_STD, &TX_CAN_BUF, auxbufRX, FLEXCAN_ID_STD(auxbufRX[0] + 0x600));
 		break;
 		case SPEED_MOTOR_CMD:
 			TARGET_SPEED_REC_CMD = 1;
