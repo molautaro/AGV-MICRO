@@ -20,7 +20,7 @@
 #define NEW_TX_MESSAGE_BUFFER_NUM 				(3)
 //#define NEW_TX_MESSAGE_BUFFER_NUM 				(4)
 #define ID_RFID_SENSOR 							FLEXCAN_ID_STD(0x100) //ID SENSOR RFID
-#define ID_MAGNETIC_SENSOR 						FLEXCAN_ID_STD(0x010) //ID SENSOR MAGNETICO
+#define ID_MAGNETIC_SENSOR 						FLEXCAN_ID_STD(0x123) //ID SENSOR MAGNETICO
 #define ID_SEND_BATERIA 						FLEXCAN_ID_EXT(0x1806E5F4)//ID de msjs enviados desde placa a la bateria
 #define ID_REC_BATERIA 							FLEXCAN_ID_EXT(0x18FF50E5)//ID de msjs que recibe la placa desde la bateria
 #define ID_REC_MOTOR_SPEED 						FLEXCAN_ID_STD(0x587) //ID RECEPCION SDO MOTOR VELOCIDAD
@@ -364,7 +364,7 @@ int main(void) {
 	operationMode = INIT_MODE;
 	init_comp = 0;
 
-	Kp_SteeringMotor.u32 = 0;
+	Kp_SteeringMotor.u32 = 1000;
 	Kd_SteeringMotor.u32 = 0;
 	Ki_SteeringMotor.u32 = 0;
 
