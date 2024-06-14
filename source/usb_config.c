@@ -74,7 +74,7 @@
 #define DESTINOALCANZADO_CMD					0xD5
 #define ORIGENALCANZADO_CMD						0xD6
 #define CHANGE_CONTROL_CMD						0xD8
-#define BRAKE_MODE_SIM_CMD						0xD9
+#define OUT_OF_LINE_CMD							0xD9
 
 #define INIT_MODE 								0x00
 #define MANUAL_MODE								0x01
@@ -659,16 +659,20 @@ void DecodeMagneticSensor(){
 	//for (i = 0; i < 8; ++i) {
 	//	SensorsStatus.byte =
 	//}
-
-	COORD_SENSORES[0] = (magneticSensorBitStatus & (1 << 11))>>11;
-	COORD_SENSORES[1] = (magneticSensorBitStatus & (1 << 10))>>10;
-	COORD_SENSORES[2] = (magneticSensorBitStatus & (1 << 9))>>9;
-	COORD_SENSORES[3] = (magneticSensorBitStatus & (1 << 8))>>8;
-	// -------------------------- LOW ------------------------- //
-	COORD_SENSORES[4] = (magneticSensorBitStatus & (1 << 3))>>3;
-	COORD_SENSORES[5] = (magneticSensorBitStatus & (1 << 2))>>2;
-	COORD_SENSORES[6] = (magneticSensorBitStatus & (1 << 1))>>1;
-	COORD_SENSORES[7] = (magneticSensorBitStatus & (1 << 0));
+	if(magneticSensorBitStatus == 0xf0f){
+		operationMode = BRAKE_MODE;
+		EnviarDatos(OUT_OF_LINE_CMD);
+	}else{
+		COORD_SENSORES[0] = (magneticSensorBitStatus & (1 << 11))>>11;
+		COORD_SENSORES[1] = (magneticSensorBitStatus & (1 << 10))>>10;
+		COORD_SENSORES[2] = (magneticSensorBitStatus & (1 << 9))>>9;
+		COORD_SENSORES[3] = (magneticSensorBitStatus & (1 << 8))>>8;
+		// -------------------------- LOW ------------------------- //
+		COORD_SENSORES[4] = (magneticSensorBitStatus & (1 << 3))>>3;
+		COORD_SENSORES[5] = (magneticSensorBitStatus & (1 << 2))>>2;
+		COORD_SENSORES[6] = (magneticSensorBitStatus & (1 << 1))>>1;
+		COORD_SENSORES[7] = (magneticSensorBitStatus & (1 << 0));
+	}
 
 }
 
@@ -898,9 +902,9 @@ void RecibirDatos(uint8_t head){
 			DestinationStation[0].u8[1]=ringRx.buf[head++];
 			//LED_BLUE_TOGGLE();
 		break;
-		case BRAKE_MODE_SIM_CMD:
+		case OUT_OF_LINE_CMD:
 			head+=9;
-			operationMode = BRAKE_MODE;
+			operationMode = AUTOMATIC_MODE;
 		break;
 		default:
 			//LED_RED_TOGGLE();
@@ -1034,6 +1038,12 @@ void EnviarDatos(uint8_t cmd){
 			ringTx.buf[ringTx.iW++] = cmd;
 		break;
 		case ORIGENALCANZADO_CMD:
+			ringTx.buf[ringTx.iW++] = 0x02;
+			ringTx.buf[ringTx.iW++] = 0x00;
+			ringTx.buf[ringTx.iW++] = ':';
+			ringTx.buf[ringTx.iW++] = cmd;
+		break;
+		case OUT_OF_LINE_CMD:
 			ringTx.buf[ringTx.iW++] = 0x02;
 			ringTx.buf[ringTx.iW++] = 0x00;
 			ringTx.buf[ringTx.iW++] = ':';
