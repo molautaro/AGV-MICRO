@@ -75,13 +75,17 @@
 #define ORIGENALCANZADO_CMD						0xD6
 #define CHANGE_CONTROL_CMD						0xD8
 #define OUT_OF_LINE_CMD							0xD9
+#define BATTERY_MODE_CMD						0xDA
+#define BATTERY_LEVEL_CMD						0xDB
+#define BATTERY_CONNECTION_CMD					0xDC
 
 #define INIT_MODE 								0x00
 #define MANUAL_MODE								0x01
 #define AUTOMATIC_MODE							0x02
 #define BRAKE_MODE								0x03
+#define CHARGE_BATTERY_MODE						0x04
 
-const uint8_t CARGA_BAT_MESSAGE[] = 	{0x02, 0x48, 0x01, 0x2C, 0x00, 0x00, 0x00, 0x00};
+const uint8_t CARGA_BAT_MESSAGE[] = 	{0x00,0x02,0x48,0x01,0x2C,0x00,0x00,0x00,0x00};
 const uint8_t SPEED_MODE_MESSAGE[] = 	{0x07,0x2F,0x60,0x60,0x00,0x03,0x00,0x00,0x00};
 const uint8_t POS_MODE_MESSAGE[] = 		{0x01,0x2F,0x60,0x60,0x00,0x01,0x00,0x00,0x00};
 const uint8_t ENABLE_MVEL[] = 			{0x07,0x2B,0x40,0x60,0x00,0x0F,0x00,0x00,0x00};
@@ -184,9 +188,9 @@ volatile _tx ringTx, auxTX;
 
 uint16_t timeoutMotorVel = 200, timeoutMotorDir = 200, timeoutMagSensor = 200, timeoutRFIDSensor = 200,timeoutHMI = 200;
 uint16_t timeoutUSB = 200, timeoutMOTOR_DATA_QT = 500, timeoutCAN_MESSAGE=5, timeoutPDO=0;
-uint16_t timeoutBAT = 100, timeoutDIREC = 250;
+uint16_t timeoutBAT = 100, timeoutDIREC = 250, timeoutCONNETIONBAT=3000;
 uint16_t magneticSensorBitStatus;
-uint16_t volt_bateria = 0;
+//uint16_t volt_bateria = 0;
 
 uint8_t rxBuf[256], txBuf[256], auxbufRX[256],auxbufTX[256], auxlenght;
 uint8_t operationMode = 0, init_comp = 0, timeoutINIT = 0,timeoutBRAKE=0, brakestatus=0;
@@ -201,10 +205,11 @@ int32_t direccion=0;
 //uint8_t msj_CAN_BAT[8] = {0x02, 0x48, 0x01, 0x2C, 0x00, 0x00, 0x00, 0x00};
 //uint8_t msj_CAN_BAT2[8] = {0x00, 0x00, 0x00, 0x00, 0x0A, 0x0B, 0x0C, 0x0D};
 
-volatile _sFlag flag1, flag2, flagFaults,SensorsStatus, flagQT, flagQT_2;
+volatile _sFlag flag1, flag2, flag3,flagFaults,SensorsStatus, flagQT, flagQT_2;
 volatile _sWork RFIDData[2],DestinationStation[2],Distance_Sensor_SIMULATION,Distance_Sensor_REAL;
 volatile _sWork SpeedMotorCalcRPM, SpeedMotorCalcRPMAUX,SpeedMotorCalcDEC;
 volatile _sWork PosSend;
+volatile _sWork volt_bateria;
 _sWork Kp_SteeringMotor, Kd_SteeringMotor, Ki_SteeringMotor;
 _sWork RealSpeedVEL,StatusWordVEL,RealCurrentVEL; //Variables para almacenar datos enviados del motor velocidad por TPDO1
 _sWork RealPositionDIR,StatusWordDIR,RealCurrentDIR; //Variables para almacenar datos enviados del motor direccion por TPDO1
@@ -237,6 +242,15 @@ _sWork RealPositionDIR,StatusWordDIR,RealCurrentDIR; //Variables para almacenar 
 #define datos_PDO_SPEED 					flag2.bit.b5 //PDO motor velocidad activado
 #define datos_PDO_DIR						flag2.bit.b6 //PDO motor direccion activado
 #define ALL_DEVICES_CONNECTED				flag2.bit.b7 //Todos los dispositivos conectados
+
+#define CHARGER_CONNECTED	 				flag3.bit.b0
+#define D									flag3.bit.b1
+#define DD									flag3.bit.b2
+#define DDD									flag3.bit.b3
+#define DDDD								flag3.bit.b4
+#define DDDDD 								flag3.bit.b5
+#define DDDDDD								flag3.bit.b6
+#define DDDDDDD								flag3.bit.b7
 
 #define GLOBAL_FAULT						flagFaults.bit.b0
 #define COMMUNICATION_FAULT					flagFaults.bit.b1
@@ -479,6 +493,18 @@ void workingmode(){
 			BrakeControl();//funcion de frenado.
 		}
 	break;
+	case CHARGE_BATTERY_MODE:
+		if(!timeoutBAT && BATT_FULL_CHARGE != 1){
+			ChargeToCanBUF(DATA_EXT, &TX_CAN_BUF, (uint8_t *)&CARGA_BAT_MESSAGE, ID_SEND_BATERIA);
+			EnviarDatos(BATTERY_LEVEL_CMD);
+			timeoutBAT=100;
+		}
+		if(!timeoutCONNETIONBAT){
+			CHARGER_CONNECTED = 0;
+			timeoutCONNETIONBAT=300;
+			EnviarDatos(BATTERY_CONNECTION_CMD);
+		}
+	break;
 	}
 }
 
@@ -498,11 +524,17 @@ void DecodeCANMessage(){
 			break;
 		case ID_REC_BATERIA: //cuando la bateria manda algo
 			//ESCRIBO COSAS PARA CARGA DE BATERIA
-			volt_bateria |= (RX_STD_Frame.dataByte0) <<8;
-			volt_bateria |= RX_STD_Frame.dataByte1;
-			if(volt_bateria == 534){
+			volt_bateria.u8[1] = (RX_STD_Frame.dataByte0);
+			volt_bateria.u8[0] = RX_STD_Frame.dataByte1;
+			timeoutCONNETIONBAT = 3000;
+			CHARGER_CONNECTED = 1;
+			if(volt_bateria.u16[0] == 534){
 				BATT_FULL_CHARGE = 1;
+				EnviarDatos(BATTERY_LEVEL_CMD);
 				//enviar msj a display para indicar que la bateria esta llena
+			}
+			else{
+				BATT_FULL_CHARGE = 0;
 			}
 			break;
 		case ID_REC_MOTOR_SPEED:
@@ -906,6 +938,20 @@ void RecibirDatos(uint8_t head){
 			head+=9;
 			operationMode = AUTOMATIC_MODE;
 		break;
+		case BATTERY_MODE_CMD:
+			head+=9;
+			if (operationMode != CHARGE_BATTERY_MODE){
+				operationMode = CHARGE_BATTERY_MODE;
+				timeoutCONNETIONBAT = 3000;
+				ChargeToCanBUF(DATA_EXT, &TX_CAN_BUF, (uint8_t *)&CARGA_BAT_MESSAGE, ID_SEND_BATERIA);
+				timeoutBAT=100;
+			}
+			else{
+				CHARGER_CONNECTED = 0;
+				BATT_FULL_CHARGE = 0;
+				//operationMode = BRAKE_MODE;
+			}
+		break;
 		default:
 			//LED_RED_TOGGLE();
 		break;
@@ -1048,6 +1094,22 @@ void EnviarDatos(uint8_t cmd){
 			ringTx.buf[ringTx.iW++] = 0x00;
 			ringTx.buf[ringTx.iW++] = ':';
 			ringTx.buf[ringTx.iW++] = cmd;
+		break;
+		case BATTERY_LEVEL_CMD:
+			ringTx.buf[ringTx.iW++] = 0x05;
+			ringTx.buf[ringTx.iW++] = 0x00;
+			ringTx.buf[ringTx.iW++] = ':';
+			ringTx.buf[ringTx.iW++] = cmd;
+			ringTx.buf[ringTx.iW++] = volt_bateria.u8[0];
+			ringTx.buf[ringTx.iW++] = volt_bateria.u8[1];
+			ringTx.buf[ringTx.iW++] = BATT_FULL_CHARGE;
+		break;
+		case BATTERY_CONNECTION_CMD:
+			ringTx.buf[ringTx.iW++] = 0x03;
+			ringTx.buf[ringTx.iW++] = 0x00;
+			ringTx.buf[ringTx.iW++] = ':';
+			ringTx.buf[ringTx.iW++] = cmd;
+			ringTx.buf[ringTx.iW++] = CHARGER_CONNECTED;
 		break;
 		default:
 		break;
@@ -1527,6 +1589,10 @@ void PIT_CHANNEL_0_IRQHANDLER(void) {
   if(timeoutBAT){
 	  timeoutBAT--;
   }
+
+  if(timeoutCONNETIONBAT){
+	  timeoutCONNETIONBAT--;
+    }
 
   if(timeoutPDO){
   	  timeoutPDO--;
