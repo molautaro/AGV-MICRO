@@ -395,6 +395,7 @@ int main(void) {
 			//EnviarDatos(MOTOR_SPEED_DATA2_CMD);
 			//EnviarDatos(MOTOR_DIR_DATA1_CMD);
 			//EnviarDatos(MOTOR_DIR_DATA2_CMD);
+    		EnviarDatos(ALIVECMD);
 			timeoutUSB = 400;
 		}
 
@@ -915,12 +916,26 @@ void RecibirDatos(uint8_t head){
 			READY_RECIVE = 1;
 		break;
 		case CHANGE_CONTROL_CMD:
-			if(operationMode == MANUAL_MODE){
-				operationMode = AUTOMATIC_MODE;
+			head++;
+			LED_RED_TOGGLE();
+			uint8_t operationModeAux = ringRx.buf[head++];
+			switch(operationModeAux){
+				case MANUAL_MODE:
+					operationMode = MANUAL_MODE;
+				break;
+				case AUTOMATIC_MODE:
+					operationMode = AUTOMATIC_MODE;
+				break;
+				case BRAKE_MODE:
+					operationMode = BRAKE_MODE;
+				break;
+				case INIT_MODE:
+					operationMode = INIT_MODE;
+				break;
+				default:
+				break;
 			}
-			else if (operationMode == AUTOMATIC_MODE) {
-				operationMode = MANUAL_MODE;
-			}
+			head+=7;
 		break;
 		case HMI_ALIVE_CMD:
 			head+=9;
@@ -993,16 +1008,18 @@ void EnviarDatos(uint8_t cmd){
 
 	switch(cmd){
 		case ALIVECMD:
-			ringTx.buf[ringTx.iW++] = 0x02;
+			ringTx.buf[ringTx.iW++] = 0x03;
 			ringTx.buf[ringTx.iW++] = 0x00;
 			ringTx.buf[ringTx.iW++] = ':';
 			ringTx.buf[ringTx.iW++] = cmd;
+			ringTx.buf[ringTx.iW++] = operationMode;
 		break;
-		case TESTCMD:
-			ringTx.buf[ringTx.iW++] = 0x02;
+		case TESTCMD: //actualmode
+			ringTx.buf[ringTx.iW++] = 0x03;
 			ringTx.buf[ringTx.iW++] = 0x00;
 			ringTx.buf[ringTx.iW++] = ':';
 			ringTx.buf[ringTx.iW++] = cmd;
+			ringTx.buf[ringTx.iW++] = operationMode;
 		break;
 		case ENABLE_MOTOR_CMD:
 			ringTx.buf[ringTx.iW++] = 0x0B;
