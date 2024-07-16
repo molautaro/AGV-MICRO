@@ -209,7 +209,7 @@ volatile _sFlag flag1, flag2, flag3,flagFaults,SensorsStatus, flagQT, flagQT_2;
 volatile _sWork RFIDData[2],DestinationStation[2],Distance_Sensor_SIMULATION,Distance_Sensor_REAL;
 volatile _sWork SpeedMotorCalcRPM, SpeedMotorCalcRPMAUX,SpeedMotorCalcDEC;
 volatile _sWork PosSend;
-volatile _sWork volt_bateria;
+volatile _sWork volt_bateria, cor_bateria;
 _sWork Kp_SteeringMotor, Kd_SteeringMotor, Ki_SteeringMotor;
 _sWork RealSpeedVEL,StatusWordVEL,RealCurrentVEL; //Variables para almacenar datos enviados del motor velocidad por TPDO1
 _sWork RealPositionDIR,StatusWordDIR,RealCurrentDIR; //Variables para almacenar datos enviados del motor direccion por TPDO1
@@ -527,6 +527,8 @@ void DecodeCANMessage(){
 			//ESCRIBO COSAS PARA CARGA DE BATERIA
 			volt_bateria.u8[1] = (RX_STD_Frame.dataByte0);
 			volt_bateria.u8[0] = RX_STD_Frame.dataByte1;
+			cor_bateria.u8[1] = RX_STD_Frame.dataByte2;
+			cor_bateria.u8[0] = RX_STD_Frame.dataByte3;
 			timeoutCONNETIONBAT = 3000;
 			CHARGER_CONNECTED = 1;
 			if(volt_bateria.u16[0] == 534){
@@ -1113,12 +1115,14 @@ void EnviarDatos(uint8_t cmd){
 			ringTx.buf[ringTx.iW++] = cmd;
 		break;
 		case BATTERY_LEVEL_CMD:
-			ringTx.buf[ringTx.iW++] = 0x05;
+			ringTx.buf[ringTx.iW++] = 0x07;
 			ringTx.buf[ringTx.iW++] = 0x00;
 			ringTx.buf[ringTx.iW++] = ':';
 			ringTx.buf[ringTx.iW++] = cmd;
 			ringTx.buf[ringTx.iW++] = volt_bateria.u8[0];
 			ringTx.buf[ringTx.iW++] = volt_bateria.u8[1];
+			ringTx.buf[ringTx.iW++] = cor_bateria.u8[0];
+			ringTx.buf[ringTx.iW++] = cor_bateria.u8[1];
 			ringTx.buf[ringTx.iW++] = BATT_FULL_CHARGE;
 		break;
 		case BATTERY_CONNECTION_CMD:
