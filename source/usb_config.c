@@ -192,7 +192,7 @@ uint16_t timeoutBAT = 100, timeoutDIREC = 250, timeoutCONNETIONBAT=3000;
 uint16_t magneticSensorBitStatus;
 //uint16_t volt_bateria = 0;
 
-uint8_t rxBuf[256], txBuf[256], auxbufRX[256],auxbufTX[256], auxlenght;
+uint8_t rxBuf[256], txBuf[256], auxbufRX[256],auxbufTX[256], auxlenght, cont_perd = 0;
 uint8_t operationMode = 0, init_comp = 0, timeoutINIT = 0,timeoutBRAKE=0, brakestatus=0;
 
 uint16_t COORD_SENSORES[8];
@@ -695,9 +695,13 @@ void DecodeMagneticSensor(){
 	//	SensorsStatus.byte =
 	//}
 	if(magneticSensorBitStatus == 0xf0f){
-		operationMode = BRAKE_MODE;
-		EnviarDatos(OUT_OF_LINE_CMD);
+		cont_perd++;
+		if(cont_perd >= 10 && operationMode == AUTOMATIC_MODE){
+			operationMode = BRAKE_MODE;
+			EnviarDatos(OUT_OF_LINE_CMD);
+		}
 	}else{
+		cont_perd = 0;
 		COORD_SENSORES[0] = (magneticSensorBitStatus & (1 << 11))>>11;
 		COORD_SENSORES[1] = (magneticSensorBitStatus & (1 << 10))>>10;
 		COORD_SENSORES[2] = (magneticSensorBitStatus & (1 << 9))>>9;
