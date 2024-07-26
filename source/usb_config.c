@@ -694,7 +694,7 @@ void DecodeMagneticSensor(){
 	//for (i = 0; i < 8; ++i) {
 	//	SensorsStatus.byte =
 	//}
-	if(magneticSensorBitStatus == 0xf0f){
+	if(magneticSensorBitStatus == 0xf0f && operationMode == AUTOMATIC_MODE){
 		cont_perd++;
 		if(cont_perd >= 10 && operationMode == AUTOMATIC_MODE){
 			operationMode = BRAKE_MODE;
@@ -954,6 +954,10 @@ void RecibirDatos(uint8_t head){
 			DestinationStation[0].u8[0]=ringRx.buf[head++];
 			DestinationStation[0].u8[1]=ringRx.buf[head++];
 			//LED_BLUE_TOGGLE();
+			cont_perd = 0;
+			operationMode = AUTOMATIC_MODE;
+			ChargeToCanBUF(DATA_STD, &TX_CAN_BUF, (uint8_t *)&ENABLE_MVEL, ID_M_VEL);
+			ChargeToCanBUF(DATA_STD, &TX_CAN_M_BUF2, (uint8_t *)&READY_POS, ID_M_DIREC);
 		break;
 		case OUT_OF_LINE_CMD:
 			head+=9;
