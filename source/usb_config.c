@@ -396,7 +396,7 @@ int main(void) {
 			//EnviarDatos(MOTOR_DIR_DATA1_CMD);
 			//EnviarDatos(MOTOR_DIR_DATA2_CMD);
     		EnviarDatos(ALIVECMD);
-			timeoutUSB = 400;
+			timeoutUSB = 40;
 		}
 
     	if(!timeoutPDO){
@@ -559,7 +559,7 @@ void DecodeCANMessage(){
 				init_comp++;
 				 if(init_comp == 5){
 					 LED_GREEN_TOGGLE();
-					 operationMode = AUTOMATIC_MODE;
+					 operationMode = BRAKE_MODE;
 				 }
 				//FIRST_INIT=0;
 //				if (init_comp == 5)
@@ -1014,18 +1014,22 @@ void EnviarDatos(uint8_t cmd){
 
 	switch(cmd){
 		case ALIVECMD:
-			ringTx.buf[ringTx.iW++] = 0x03;
+			ringTx.buf[ringTx.iW++] = 0x05;
 			ringTx.buf[ringTx.iW++] = 0x00;
 			ringTx.buf[ringTx.iW++] = ':';
 			ringTx.buf[ringTx.iW++] = cmd;
 			ringTx.buf[ringTx.iW++] = operationMode;
+			_sWork temp_mag_status;
+			temp_mag_status.u16[0] = magneticSensorBitStatus;
+			ringTx.buf[ringTx.iW++] = temp_mag_status.u8[0];
+			ringTx.buf[ringTx.iW++] = temp_mag_status.u8[1];
 		break;
 		case TESTCMD: //actualmode
-			ringTx.buf[ringTx.iW++] = 0x03;
+			ringTx.buf[ringTx.iW++] = 0x02;
 			ringTx.buf[ringTx.iW++] = 0x00;
 			ringTx.buf[ringTx.iW++] = ':';
 			ringTx.buf[ringTx.iW++] = cmd;
-			ringTx.buf[ringTx.iW++] = operationMode;
+			//ringTx.buf[ringTx.iW++] = operationMode;
 		break;
 		case ENABLE_MOTOR_CMD:
 			ringTx.buf[ringTx.iW++] = 0x0B;
