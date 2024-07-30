@@ -187,7 +187,7 @@ volatile _rx ringRx, auxRX;
 volatile _tx ringTx, auxTX;
 
 uint16_t timeoutMotorVel = 200, timeoutMotorDir = 200, timeoutMagSensor = 200, timeoutRFIDSensor = 200,timeoutHMI = 200;
-uint16_t timeoutUSB = 200, timeoutMOTOR_DATA_QT = 500, timeoutCAN_MESSAGE=5, timeoutPDO=0;
+uint16_t timeoutUSB = 200, timeoutMOTOR_DATA_QT = 500, timeoutCAN_MESSAGE=5, timeoutPDO=0, timeoutMOTORS = 2;
 uint16_t timeoutBAT = 100, timeoutDIREC = 250, timeoutCONNETIONBAT=3000;
 uint16_t magneticSensorBitStatus;
 //uint16_t volt_bateria = 0;
@@ -244,7 +244,7 @@ _sWork RealPositionDIR,StatusWordDIR,RealCurrentDIR; //Variables para almacenar 
 #define ALL_DEVICES_CONNECTED				flag2.bit.b7 //Todos los dispositivos conectados
 
 #define CHARGER_CONNECTED	 				flag3.bit.b0
-#define D									flag3.bit.b1
+#define CAN_MESSAGE_TEST					flag3.bit.b1
 #define DD									flag3.bit.b2
 #define DDD									flag3.bit.b3
 #define DDDD								flag3.bit.b4
@@ -486,8 +486,18 @@ void workingmode(){
 	case MANUAL_MODE:
 	break;
 	case AUTOMATIC_MODE://MODO AUTOMATICO
-		SpeedMotorControl(); //funcion control velocidad
-		SteeringMotorControl(); //funcion control direccion
+		if(!timeoutMOTORS){
+			if(CAN_MESSAGE_TEST){
+				SpeedMotorControl(); //funcion control velocidad
+				CAN_MESSAGE_TEST = 0;
+			}
+			else {
+				SteeringMotorControl(); //funcion control direccion
+				CAN_MESSAGE_TEST = 1;
+			}
+			timeoutMOTORS = 2;
+		}
+
 	break;
 	case BRAKE_MODE:
 		if(!timeoutBRAKE || READY_RECIVE){
@@ -670,8 +680,8 @@ void DecodeRFIDSensor(){
 
 	if (RFIDData[0].u16[0]==DestinationStation[0].u16[0]){
 		//LED_GREEN_TOGGLE();//LLEGO A DESTINO
-		//operationMode = 2; ENTRA EN MODO FRENADO
-		//brakestatus=0;
+		operationMode = BRAKE_MODE; //ENTRA EN MODO FRENADO
+		brakestatus = 0;
 		if(DestinationStation[0].u16[0] == 0x3045){
 			EnviarDatos(ORIGENALCANZADO_CMD);
 		}
@@ -696,7 +706,7 @@ void DecodeMagneticSensor(){
 	//}
 	if(magneticSensorBitStatus == 0xf0f && operationMode == AUTOMATIC_MODE){
 		cont_perd++;
-		if(cont_perd >= 10 && operationMode == AUTOMATIC_MODE){
+		if(cont_perd >= 10){
 			operationMode = BRAKE_MODE;
 			EnviarDatos(OUT_OF_LINE_CMD);
 		}
@@ -957,6 +967,7 @@ void RecibirDatos(uint8_t head){
 			cont_perd = 0;
 			operationMode = AUTOMATIC_MODE;
 			ChargeToCanBUF(DATA_STD, &TX_CAN_BUF, (uint8_t *)&ENABLE_MVEL, ID_M_VEL);
+			//SpeedMotorCalcRPM.f = 0;
 			ChargeToCanBUF(DATA_STD, &TX_CAN_M_BUF2, (uint8_t *)&READY_POS, ID_M_DIREC);
 		break;
 		case OUT_OF_LINE_CMD:
@@ -1443,7 +1454,7 @@ void ActionQT(){
 void BrakeControl(){
 	switch(brakestatus){
 	case 0:
-		if (RealSpeedVEL.i32 >= 2 || RealSpeedVEL.i32 <= -2) {
+		//if (RealSpeedVEL.i32 >= 2 || RealSpeedVEL.i32 <= -2) {
 			SpeedMotorCalcDEC.i32 = 0;
 			auxbufTX[0] = 0x07; //id motor velocidad
 			auxbufTX[1] = 0x23;
@@ -1455,7 +1466,9 @@ void BrakeControl(){
 			auxbufTX[7] = SpeedMotorCalcDEC.i8[2];
 			auxbufTX[8] = SpeedMotorCalcDEC.i8[3];
 			timeoutBRAKE = 5;
-		}
+			READY_RECIVE = 1;
+			CreateCANMessage(SPEED_MOTOR_CMD);
+		//}
 
 	break;
 	}
@@ -1463,7 +1476,7 @@ void BrakeControl(){
 
 void SpeedMotorControl(){
 	SpeedMotorCalcRPMAUX.f = speedControlCalc(Distance_Sensor_REAL.f, 3000);
-	if(fabs(SpeedMotorCalcRPM.f-SpeedMotorCalcRPMAUX.f) >= 50){
+	if(fabs(RealSpeedVEL.f-SpeedMotorCalcRPMAUX.f) >= 50){
 		//cambiar velocidad porque el cambio es de mas de 50rpm
 		SpeedMotorCalcRPM.f = SpeedMotorCalcRPMAUX.f;
 		SpeedMotorCalcDEC.i32 = speedConvertionRPMtoDEC(SpeedMotorCalcRPM.f);
@@ -1630,6 +1643,10 @@ void PIT_CHANNEL_0_IRQHANDLER(void) {
   if(timeoutPDO){
   	  timeoutPDO--;
     }
+  if(timeoutMOTORS){
+	  timeoutMOTORS--;
+  }
+
 
   if(timeoutINIT){
 	  timeoutINIT--;
