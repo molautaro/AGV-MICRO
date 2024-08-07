@@ -461,7 +461,7 @@ void workingmode(){
 			break;
 			case 2:
 				for (uint8_t var = 0; var < 9; var++) {
-					auxbufTX[var]=DESA_SPEED_10[var];
+					auxbufTX[var]=DESA_SPEED_100[var];
 				}
 				CreateCANMessage(DEC_SPEED_CMD);
 			break;
