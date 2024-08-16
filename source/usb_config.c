@@ -261,6 +261,10 @@ _sWork RealPositionDIR,StatusWordDIR,RealCurrentDIR; //Variables para almacenar 
 #define sssssss								flagFaults.bit.b6
 #define ssssssss							flagFaults.bit.b7
 
+#define DISTANCE1 20 //distancia maxima de medida
+#define DISTANCE2 10 //distancia media
+#define DISTANCE3 5 //distancia minima
+
 
 
 //PARA COMANDOS RECIBIDOS POR QT
@@ -704,7 +708,7 @@ void DecodeMagneticSensor(){
 	//for (i = 0; i < 8; ++i) {
 	//	SensorsStatus.byte =
 	//}
-	if(magneticSensorBitStatus == 0xf0f && operationMode == AUTOMATIC_MODE){
+	if(magneticSensorBitStatus == 0x000 && operationMode == AUTOMATIC_MODE){
 		cont_perd++;
 		if(cont_perd >= 10){
 			operationMode = BRAKE_MODE;
@@ -1475,8 +1479,8 @@ void BrakeControl(){
 }
 
 void SpeedMotorControl(){
-	SpeedMotorCalcRPMAUX.f = speedControlCalc(Distance_Sensor_REAL.f, 3000);
-	if(fabs(RealSpeedVEL.f-SpeedMotorCalcRPMAUX.f) >= 50){
+	SpeedMotorCalcRPMAUX.f = speedControlCalc(Distance_Sensor_REAL.f, 2500);
+	//if(fabs(RealSpeedVEL.f-SpeedMotorCalcRPMAUX.f) >= 50){
 		//cambiar velocidad porque el cambio es de mas de 50rpm
 		SpeedMotorCalcRPM.f = SpeedMotorCalcRPMAUX.f;
 		SpeedMotorCalcDEC.i32 = speedConvertionRPMtoDEC(SpeedMotorCalcRPM.f);
@@ -1491,7 +1495,7 @@ void SpeedMotorControl(){
 		auxbufTX[8] = SpeedMotorCalcDEC.u8[3];
 		CreateCANMessage(SPEED_MOTOR_CMD);
 		//READY_RECIVE=1;
-	}
+	//}
 // ESTO ES PARA SIMULACION
 //	SpeedMotorCalcRPMAUX.f = speedControlCalc(Distance_Sensor_SIMULATION.f, 3000);
 //	if(fabs(SpeedMotorCalcRPM.f-SpeedMotorCalcRPMAUX.f) >= 50){
@@ -1520,12 +1524,12 @@ uint32_t speedConvertionRPMtoDEC(float rpmSpeed){
 
 float speedControlCalc(float d, int Vmax){
 	LED_BLUE_TOGGLE();
-	if (d > 8) {
+	if (d > DISTANCE1) {
 		return Vmax+0.0;
-	} else if (d >= 4 && d <= 8) {
-		return (Vmax) - ((Vmax / 2) * ((8 - d) / 4.0));
-	} else if (d >= 1.5 && d < 4) {
-		return ((Vmax / 2) - ((Vmax/3) * ((4-d)/2.5)));
+	} else if (d >= DISTANCE2 && d <= DISTANCE1) {
+		return (Vmax) - ((Vmax / 2) * ((DISTANCE1 - d) / 4.0));
+	} else if (d >= DISTANCE3 && d < DISTANCE2) {
+		return ((Vmax / 2) - ((Vmax/3) * ((DISTANCE2-d)/2.5)));
 	} else {
 		return 0.0;
 	}
@@ -1537,12 +1541,12 @@ void SteeringMotorControl(int32_t direc_base){
 	pos_lin = 0;
 
 	for(uint8_t i = 0; i < 8; i++){
-		if(COORD_SENSORES[i] == 0 && COORD_SENSORES[i+1] == 0){
+		if(COORD_SENSORES[i] == 1 && COORD_SENSORES[i+1] == 1){
 			pos_lin = i + (i+1);
 			//pos_lin2 = i+1;
 			break;
 		}else{
-			if(COORD_SENSORES[i] == 0){
+			if(COORD_SENSORES[i] == 1){
 				pos_lin = i * 2;
 			}
 		}
