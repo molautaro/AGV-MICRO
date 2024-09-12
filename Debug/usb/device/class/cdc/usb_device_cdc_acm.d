@@ -1,49 +1,49 @@
 usb/device/class/cdc/usb_device_cdc_acm.o \
  usb/device/class/cdc/usb_device_cdc_acm.d: \
  ../usb/device/class/cdc/usb_device_cdc_acm.c \
- C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\source\generated/usb_device_config.h \
- C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\usb\include/usb.h \
- C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\drivers/fsl_common.h \
- C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\device/fsl_device_registers.h \
- C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\device/MK64F12.h \
- C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\CMSIS/core_cm4.h \
- C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\CMSIS/cmsis_version.h \
- C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\CMSIS/cmsis_compiler.h \
- C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\CMSIS/cmsis_gcc.h \
- C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\device/system_MK64F12.h \
- C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\device/MK64F12_features.h \
- C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\drivers/fsl_common_arm.h \
- C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\drivers/fsl_clock.h \
- C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\drivers/fsl_common.h \
- C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\component\osa/fsl_os_abstraction.h \
- C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\component\osa/fsl_os_abstraction_config.h \
- C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\component\lists/fsl_component_generic_list.h \
- C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\component\osa/fsl_os_abstraction_bm.h \
- C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\usb\include/usb_misc.h \
- C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\usb\include/usb_spec.h \
- C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\usb\device\include/usb_device.h \
- C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\usb\device\class/usb_device_class.h \
+ C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\source\generated/usb_device_config.h \
+ C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\usb\include/usb.h \
+ C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\drivers/fsl_common.h \
+ C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\device/fsl_device_registers.h \
+ C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\device/MK64F12.h \
+ C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\CMSIS/core_cm4.h \
+ C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\CMSIS/cmsis_version.h \
+ C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\CMSIS/cmsis_compiler.h \
+ C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\CMSIS/cmsis_gcc.h \
+ C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\device/system_MK64F12.h \
+ C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\device/MK64F12_features.h \
+ C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\drivers/fsl_common_arm.h \
+ C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\drivers/fsl_clock.h \
+ C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\drivers/fsl_common.h \
+ C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\component\osa/fsl_os_abstraction.h \
+ C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\component\osa/fsl_os_abstraction_config.h \
+ C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\component\lists/fsl_component_generic_list.h \
+ C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\component\osa/fsl_os_abstraction_bm.h \
+ C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\usb\include/usb_misc.h \
+ C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\usb\include/usb_spec.h \
+ C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\usb\device\include/usb_device.h \
+ C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\usb\device\class/usb_device_class.h \
  ../usb/device/class/cdc/usb_device_cdc_acm.h
-C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\source\generated/usb_device_config.h:
-C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\usb\include/usb.h:
-C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\drivers/fsl_common.h:
-C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\device/fsl_device_registers.h:
-C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\device/MK64F12.h:
-C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\CMSIS/core_cm4.h:
-C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\CMSIS/cmsis_version.h:
-C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\CMSIS/cmsis_compiler.h:
-C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\CMSIS/cmsis_gcc.h:
-C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\device/system_MK64F12.h:
-C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\device/MK64F12_features.h:
-C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\drivers/fsl_common_arm.h:
-C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\drivers/fsl_clock.h:
-C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\drivers/fsl_common.h:
-C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\component\osa/fsl_os_abstraction.h:
-C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\component\osa/fsl_os_abstraction_config.h:
-C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\component\lists/fsl_component_generic_list.h:
-C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\component\osa/fsl_os_abstraction_bm.h:
-C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\usb\include/usb_misc.h:
-C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\usb\include/usb_spec.h:
-C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\usb\device\include/usb_device.h:
-C:\Users\Lauta\Documents\MCUXpressoIDE_11.6.1_8255\workspace\test_usb\usb\device\class/usb_device_class.h:
+C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\source\generated/usb_device_config.h:
+C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\usb\include/usb.h:
+C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\drivers/fsl_common.h:
+C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\device/fsl_device_registers.h:
+C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\device/MK64F12.h:
+C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\CMSIS/core_cm4.h:
+C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\CMSIS/cmsis_version.h:
+C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\CMSIS/cmsis_compiler.h:
+C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\CMSIS/cmsis_gcc.h:
+C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\device/system_MK64F12.h:
+C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\device/MK64F12_features.h:
+C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\drivers/fsl_common_arm.h:
+C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\drivers/fsl_clock.h:
+C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\drivers/fsl_common.h:
+C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\component\osa/fsl_os_abstraction.h:
+C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\component\osa/fsl_os_abstraction_config.h:
+C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\component\lists/fsl_component_generic_list.h:
+C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\component\osa/fsl_os_abstraction_bm.h:
+C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\usb\include/usb_misc.h:
+C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\usb\include/usb_spec.h:
+C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\usb\device\include/usb_device.h:
+C:\Users\wen_c\Documents\MCUXpressoIDE_11.6.1_8255\workspace\new\AGV-MICRO\usb\device\class/usb_device_class.h:
 ../usb/device/class/cdc/usb_device_cdc_acm.h:

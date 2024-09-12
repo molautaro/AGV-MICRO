@@ -10,9 +10,15 @@
  * Definitions
  ******************************************************************************/
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
 /*!
  * @brief Interface task function.
  */
 void USB_DeviceInterface0CicVcomTask(void);
 
+#if defined(__cplusplus)
+}
+#endif
 #endif /* __USB_DEVICE_INTERFACE_0_CIC_VCOM_H__ */
