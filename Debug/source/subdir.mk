@@ -6,17 +6,26 @@
 C_SRCS += \
 ../source/semihost_hardfault.c \
 ../source/usb_config.c \
-../source/usb_device_interface_0_cic_vcom.c 
+../source/usb_device_interface_0_cic_vcom.c \
+../source/canComms.c \
+../source/motorControl.c \
+../source/qtComms.c
 
 C_DEPS += \
 ./source/semihost_hardfault.d \
 ./source/usb_config.d \
-./source/usb_device_interface_0_cic_vcom.d 
+./source/usb_device_interface_0_cic_vcom.d \
+./source/canComms.d \
+./source/motorControl.d \
+./source/qtComms.d
 
 OBJS += \
 ./source/semihost_hardfault.o \
 ./source/usb_config.o \
-./source/usb_device_interface_0_cic_vcom.o 
+./source/usb_device_interface_0_cic_vcom.o ./source/canComms.d ./source/canComms.o ./source/motorControl.d ./source/motorControl.o ./source/qtComms.d ./source/qtComms.o \
+./source/canComms.o \
+./source/motorControl.o \
+./source/qtComms.o
 
 
 # Each subdirectory must supply rules for building sources it contributes
@@ -31,7 +40,10 @@ source/%.o: ../source/%.c source/subdir.mk
 clean: clean-source
 
 clean-source:
-	-$(RM) ./source/semihost_hardfault.d ./source/semihost_hardfault.o ./source/usb_config.d ./source/usb_config.o ./source/usb_device_interface_0_cic_vcom.d ./source/usb_device_interface_0_cic_vcom.o
+	-$(RM) ./source/semihost_hardfault.d ./source/semihost_hardfault.o ./source/usb_config.d ./source/usb_config.o ./source/usb_device_interface_0_cic_vcom.d \
+./source/canComms.d \
+./source/motorControl.d \
+./source/qtComms.d ./source/usb_device_interface_0_cic_vcom.o ./source/canComms.d ./source/canComms.o ./source/motorControl.d ./source/motorControl.o ./source/qtComms.d ./source/qtComms.o
 
 .PHONY: clean-source
 
